@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Live – SALTO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;color:#25343F;background:#fff;font-size:14px;line-height:1.5}
+a{text-decoration:none;color:inherit}
+
+/* NAVBAR */
+nav{
+  width:100%;background:rgba(206,208,249,0.50);
+  padding:0 328px;height:65px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.logo-wrap{display:flex;flex-direction:column}
+.logo-text{font-size:20px;font-weight:900;letter-spacing:2px;line-height:18px}
+.logo-s{color:#FF9B51}.logo-r{color:#25343F}
+.logo-sub{font-family:'Poppins',sans-serif;color:#929292;font-size:10px;font-weight:500;line-height:18px;text-align:center}
+.nav-links{display:flex;align-items:center;gap:20px;padding:10px}
+.nav-link{font-family:'Poppins',sans-serif;font-size:14px;font-weight:400;color:#25343F;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.nl-live{font-weight:700}
+.live-row{display:flex;align-items:center;gap:5px}
+.dot-red{width:7px;height:7px;background:#FF0000;border-radius:50%;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.nl-underline{width:39px;height:0;border-top:1px solid #25343F}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.btn-masuk{padding:10px 20px;border-radius:30px;border:1px solid #25343F;font-family:'Poppins',sans-serif;font-size:14px;color:#25343F;background:transparent;cursor:pointer;line-height:18px}
+.btn-daftar-n{padding:10px 20px;border-radius:30px;background:#25343F;font-family:'Poppins',sans-serif;font-size:14px;color:#fff;border:none;cursor:pointer;line-height:18px}
+.btn-masuk:hover{background:rgba(37,52,63,.07)}
+.btn-daftar-n:hover{background:#1a252f}
+
+/* HERO */
+.hero{
+  width:100%;padding:28px 328px;
+  background:linear-gradient(135deg,#CED0F9 0%,rgba(0,15,113,.83) 100%);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+}
+.hero-left{flex:1;display:flex;flex-direction:column;gap:12px;max-width:480px}
+.breadcrumb{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:400;color:#fff;line-height:20px}
+.badge-row{display:flex;align-items:flex-start;gap:12px}
+.bdg-live{padding:10px 28px;background:#FB2C36;border-radius:28px;display:flex;align-items:center;gap:10px;box-shadow:4px 4px 4px rgba(0,0,0,.10);cursor:pointer}
+.bdg-live .dot-w{width:8px;height:8px;background:#fff;border-radius:50%;flex-shrink:0}
+.bdg-live span,.bdg-up span{font-family:'Poppins',sans-serif;font-size:16px;font-weight:600;color:#fff}
+.bdg-up{padding:10px 28px;background:rgba(243,244,246,.25);border-radius:28px;border:1px solid rgba(255,255,255,.50);backdrop-filter:blur(2px);display:flex;align-items:center;cursor:pointer}
+.hero-title{font-family:'Poppins',sans-serif;font-size:48px;font-weight:700;color:#fff;line-height:48px}
+.hero-desc{font-size:14px;font-weight:400;color:#fff;line-height:21px}
+.hero-right{width:381px;display:flex;align-items:flex-end;justify-content:flex-end;gap:16px;align-self:stretch}
+.stat-item{width:87px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.stat-box{width:54px;height:54px;background:#fff;border-radius:18px;box-shadow:4px 4px 4px rgba(0,0,0,.10);display:flex;align-items:center;justify-content:center}
+.stat-box svg{width:28px;height:28px}
+.stat-n{font-size:20px;font-weight:700;color:#fff;line-height:20px}
+.stat-l{font-size:14px;font-weight:400;color:#fff;line-height:20px;text-align:center}
+
+/* MAIN */
+.main{width:100%;padding:28px 328px;display:flex;flex-direction:column;gap:10px}
+
+/* Section bar */
+.sec-bar{display:flex;align-items:center;justify-content:space-between;height:30px}
+.sec-title{position:relative;padding-left:20px;font-size:20px;font-weight:800;color:#101828;line-height:30px}
+.sec-dot{position:absolute;left:0;top:50%;transform:translateY(-50%);width:12px;height:12px;background:#FB2C36;border-radius:50%;opacity:.87;animation:blink 1.5s infinite}
+.live-now{padding:4px 12px;background:#FEE2E2;border-radius:50px;font-size:12px;font-weight:700;color:#DC2626;line-height:16px}
+
+/* Live panel */
+.live-panel{background:#fff;border-radius:14px;border:1px solid #F1F5F9;display:flex;flex-direction:column;padding:0 24px 12px;overflow:hidden}
+.chat-hdr{display:flex;align-items:center;gap:7px;padding:16px 24px;border-bottom:1px solid #F3F4F6;margin:0 -24px}
+.chat-hdr-lbl{font-size:14px;font-weight:700;color:#101828;line-height:20px}
+.chat-body{display:flex;flex-direction:column;gap:12px;padding:16px 0;max-height:380px;overflow-y:auto}
+.chat-body::-webkit-scrollbar{width:3px}
+.chat-body::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:2px}
+.cmsg{display:flex;align-items:flex-start;gap:10px}
+.cav{width:28px;height:28px;border-radius:50%;background:#0A2647;border:2px solid #fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
+.cmc{display:flex;flex-direction:column;gap:4px}
+.cnr{display:flex;align-items:center;gap:5px}
+.cnm{font-size:12px;font-weight:700;color:#25343F;line-height:16px}
+.htag{padding:2px 5px;background:#25343F;border-radius:4px;font-size:9px;font-weight:700;color:#fff;line-height:12px;letter-spacing:.45px}
+.bbl-h{background:#F1F5F9;border:1px solid #BFDBFE;border-radius:20px 20px 20px 4px;padding:8px 13px;font-size:14px;color:#25343F;line-height:22.75px;max-width:771px}
+.bbl-u{background:#F9F9F1;border:1px solid #E5E5E5;border-radius:20px 20px 20px 4px;padding:8px 13px;font-size:14px;color:#25343F;line-height:22.75px}
+.bbl-b{background:#F1F5F9;border:1px solid #BFDBFE;border-radius:20px 20px 20px 4px;padding:8px 13px;font-size:14px;color:#25343F;line-height:22.75px}
+.cmeta{display:flex;align-items:center;gap:7px;font-size:12px;color:#929292;line-height:16px}
+.lbtn{background:none;border:none;cursor:pointer;font-size:12px;color:#929292;display:flex;align-items:center;gap:3px;font-family:'Inter',sans-serif}
+.lbtn:hover{color:#25343F}
+.cin-bar{background:#F9FAFB;border-radius:16px;border:1px solid #E5E7EB;padding:9px 13px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+.cin{flex:1;background:transparent;border:none;outline:none;font-size:13.3px;color:#374151;line-height:16.8px;font-family:'Inter',sans-serif}
+.cin::placeholder{color:#374151}
+.sbtn{width:30px;height:30px;background:#7783D4;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
+.sbtn:hover{background:#5a67c4}
+
+/* Meta bar */
+.meta-bar{display:flex;gap:12px}
+.mc{flex:1;height:62px;background:#fff;border-radius:14px;border:1px solid #F1F5F9;box-shadow:0 1px 4px rgba(0,0,0,.05);display:flex;align-items:center;padding:13px 13px 13px 57px;position:relative}
+.mi{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.mi svg{width:16px;height:16px}
+.mip{background:rgba(99,102,241,.09)}
+.mig{background:rgba(5,150,105,.09)}
+.mia{background:rgba(217,119,6,.09)}
+.mic{background:rgba(8,145,178,.09)}
+.mt{display:flex;flex-direction:column}
+.ml{font-size:12px;font-weight:400;color:#929292;line-height:16px}
+.mv{font-size:14px;font-weight:700;color:#25343F;line-height:20px}
+
+/* Upcoming */
+.upcoming-h{font-size:20px;font-weight:800;color:#101828;line-height:30px}
+.cards-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.cards-row::-webkit-scrollbar{height:4px}
+.cards-row::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:2px}
+.scard{width:332.33px;min-width:332.33px;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+.scard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.ctop{height:170px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.c-blue{background:linear-gradient(152deg,#1D4ED8 0%,#1E40AF 100%)}
+.c-red{background:linear-gradient(152deg,#B91C1C 0%,#991B1B 100%)}
+.c-green{background:linear-gradient(152deg,#047857 0%,#065F46 100%)}
+.c-amber{background:linear-gradient(152deg,#B45309 0%,#92400E 100%)}
+.ctags{display:flex;align-items:center;gap:8px}
+.tseg{padding:4px 10px;background:rgba(255,255,255,.20);border-radius:50px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#fff;line-height:16px}
+.tseg svg{width:10px;height:10px;fill:#fff;flex-shrink:0}
+.tcat{padding:4px 10px;background:rgba(255,255,255,.15);border-radius:50px;font-size:12px;font-weight:400;color:rgba(255,255,255,.90);line-height:16px}
+.ctitle{font-size:14px;font-weight:600;color:#fff;line-height:20.3px;flex:1}
+.chost-row{display:flex;align-items:center;justify-content:space-between}
+.chost{display:flex;align-items:center;gap:8px}
+.hav{width:32px;height:32px;background:rgba(255,255,255,.20);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hav svg{width:16px;height:16px;fill:#fff}
+.hn{font-size:12px;font-weight:600;color:#fff;line-height:16px}
+.ho{font-size:12px;font-weight:400;color:rgba(255,255,255,.70);line-height:16px}
+.pbtn{width:36px;height:36px;background:rgba(255,255,255,.20);border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-left:2px;transition:background .2s}
+.pbtn:hover{background:rgba(255,255,255,.35)}
+.pbtn svg{width:13px;height:13px;fill:#fff}
+.cbot{padding:16px 20px;background:#fff;border:1px solid #F3F4F6;border-bottom-left-radius:16px;border-bottom-right-radius:16px;display:flex;flex-direction:column;gap:12px}
+.cdate{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:400;color:#929292;line-height:16px}
+.cdate svg{width:16px;height:16px;flex-shrink:0}
+.crow{display:flex;align-items:center;justify-content:space-between}
+.cpart{display:flex;align-items:center;gap:6px}
+.cpart svg{width:16px;height:16px;flex-shrink:0}
+.pn{font-size:12px;font-weight:700;color:#25343F;line-height:16px}
+.pt{font-size:12px;font-weight:400;color:#929292;line-height:16px}
+.breg{padding:6px 12px;background:#25343F;border-radius:50px;font-size:12px;font-weight:600;color:#fff;border:none;cursor:pointer;line-height:16px;transition:opacity .2s,background .2s}
+.breg:hover{opacity:.85}
+.ptrack{height:6px;background:#F3F4F6;border-radius:50px;overflow:hidden;position:relative}
+.pfill{height:100%;border-radius:50px;position:absolute;left:0;top:0}
+.f-blue{background:#2563EB}
+.f-red{background:#DC2626}
+.f-green{background:#059669}
+.f-amber{background:#D97706}
+
+/* NEWSLETTER */
+.newsletter{width:100%;background:#7783D4;padding:40px 328px;display:flex;align-items:center;justify-content:space-between;gap:40px}
+.nl-h{font-size:20px;font-weight:700;color:#fff;line-height:30px;margin-bottom:4px}
+.nl-d{font-size:14px;font-weight:400;color:#fff;line-height:21px}
+.nl-form{display:flex;gap:8px;align-items:stretch;max-width:448px}
+.nl-inp{min-width:240px;padding:13px 16px 14px;background:rgba(243,244,246,.10);border-radius:50px;border:1px solid rgba(255,255,255,.25);font-size:14px;color:#fff;outline:none;font-family:'Inter',sans-serif}
+.nl-inp::placeholder{color:#fff}
+.nl-btn{padding:12.5px 20px 13.5px;background:rgba(206,208,249,.50);border-radius:50px;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#fff;white-space:nowrap;transition:background .2s;font-family:'Inter',sans-serif}
+.nl-btn:hover{background:rgba(206,208,249,.75)}
+
+/* FOOTER */
+footer{width:100%;background:#29326C;padding:0 328px 28px}
+.ftop{background:#7783D4;margin:0 -328px;padding:40px 328px;display:flex;align-items:center;justify-content:space-between;gap:40px}
+.ftop .nl-h{font-size:20px;font-weight:700;color:#fff;line-height:30px;margin-bottom:4px}
+.fbody{display:flex;align-items:flex-start;justify-content:space-between;padding:48px 0;gap:40px}
+.fbrand{width:467px;display:flex;flex-direction:column;gap:15.2px}
+.flogo{font-size:20px;font-weight:900;letter-spacing:2px;line-height:20px}
+.flogo .s{color:#FF9B51}.flogo .r{color:#fff}
+.ftagline{font-size:10px;font-weight:500;color:#fff;letter-spacing:.1px;line-height:10px}
+.fdesc{font-size:13px;font-weight:400;color:#fff;line-height:21.13px}
+.fcontacts{display:flex;flex-direction:column;gap:7px;padding-top:7.8px}
+.fci{display:flex;align-items:center;gap:8px;font-size:13px;color:#fff;line-height:19.5px}
+.fci svg{width:16px;height:16px;flex-shrink:0}
+.fsoc{display:flex;gap:12px;padding-top:8.8px}
+.sbtn{width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+.sbtn:hover{background:rgba(255,255,255,.16)}
+.sbtn svg{width:16px;height:16px;fill:#fff}
+.fcol{display:flex;flex-direction:column;gap:16px;width:217px}
+.fcol-t{font-size:13px;font-weight:600;color:#fff;line-height:19.5px}
+.fcol-links{display:flex;flex-direction:column;gap:10px}
+.fcol-links a{font-size:13px;font-weight:400;color:#fff;line-height:19.5px;opacity:.85}
+.fcol-links a:hover{opacity:1}
+.fdiv{width:100%;border:none;border-top:1px solid #7783D4}
+.fbot{display:flex;align-items:center;justify-content:space-between;padding-top:28px}
+.fcopy{font-size:12px;color:#fff;line-height:18px}
+.fcopy .heart{color:#FF0000}
+.flinks{display:flex;gap:16px}
+.flinks a{font-size:12px;color:#fff;line-height:18px;opacity:.8}
+.flinks a:hover{opacity:1}
+
+/* Animations */
+.fade-up{opacity:0;transform:translateY(14px);animation:fadeUp .45s ease forwards}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.d1{animation-delay:.06s}.d2{animation-delay:.12s}.d3{animation-delay:.18s}.d4{animation-delay:.24s}.d5{animation-delay:.30s}
+
+@media(max-width:1400px){nav,.hero,.main,.newsletter,footer{padding-left:48px;padding-right:48px}.ftop{margin:0 -48px;padding-left:48px;padding-right:48px}}
+@media(max-width:900px){nav{padding:0 16px}.nav-links{display:none}.hero{padding:20px 16px;flex-direction:column}.hero-right{width:100%;justify-content:flex-start}.main,.newsletter,footer{padding-left:16px;padding-right:16px}.ftop{margin:0 -16px;padding:24px 16px;flex-direction:column}.fbody{flex-direction:column}.meta-bar{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo-wrap">
+    <div class="logo-text"><span class="logo-s">S</span><span class="logo-r">ALTO</span></div>
+  </div>
+  <div class="logo-sub">Let's Connect, Grow Together</div>
+  <div class="nav-links">
+    <div class="nav-link">Beranda</div>
+    <div class="nav-link">Diskusi</div>
+    <div class="nav-link nl-live">
+      <div class="live-row"><span class="dot-red"></span> Live</div>
+      <div class="nl-underline"></div>
+    </div>
+    <div class="nav-link">Komunitas</div>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-masuk">Masuk</button>
+    <button class="btn-daftar-n">Daftar</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="breadcrumb"><span>Beranda</span><span>/</span><span>Live</span></div>
+    <div class="badge-row">
+      <div class="bdg-live"><div class="dot-w"></div><span>1 SESI BERLANGSUNG</span></div>
+      <div class="bdg-up"><span>4 Sesi Mendatang</span></div>
+    </div>
+    <div class="hero-title">Live Diskusi<br>Bersama Alumni</div>
+    <div class="hero-desc">Sesi tanya jawab langsung dengan alumni berpengalaman.&nbsp; Pelajari pengalaman nyata, tanyakan pertanyaanmu secara real-time.</div>
+  </div>
+  <div class="hero-right">
+    <div class="stat-item">
+      <div class="stat-box">
+        <svg viewBox="0 0 28 28"><rect x="1.46" y="3.79" width="25.08" height="20.42" rx="2.5" fill="#FF9B51"/></svg>
+      </div>
+      <div class="stat-n">12</div>
+      <div class="stat-l">Sesi bulan ini</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-box">
+        <svg viewBox="0 0 28 28"><ellipse cx="10" cy="7" rx="5.54" ry="5.54" fill="#FF9B51"/><ellipse cx="20" cy="7" rx="3" ry="3" fill="#FF9B51"/><rect x="1.46" y="14.29" width="16" height="11.08" rx="2" fill="#FF9B51"/><rect x="18.5" y="15.46" width="7" height="7.43" rx="2" fill="#FF9B51"/></svg>
+      </div>
+      <div class="stat-n">234</div>
+      <div class="stat-l">Peserta Aktif</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-box">
+        <svg viewBox="0 0 28 28"><polygon points="14,2 17,10.5 26,11 19.5,17 21.5,26 14,21.5 6.5,26 8.5,17 2,11 11,10.5" fill="#FF9B51"/></svg>
+      </div>
+      <div class="stat-n">28</div>
+      <div class="stat-l">Alumni Host</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="sec-bar">
+    <div class="sec-title"><span class="sec-dot"></span>Sedang Berlangsung</div>
+    <div class="live-now">LIVE NOW</div>
+  </div>
+
+  <!-- Live Panel -->
+  <div class="live-panel">
+    <div class="chat-hdr">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#101828" stroke-width="1.5"/></svg>
+      <div class="chat-hdr-lbl">Live Chat</div>
+    </div>
+
+    <div class="chat-body" id="chatBox">
+      <div class="cmsg">
+        <div class="cav" style="background:#0A2647">AW</div>
+        <div class="cmc">
+          <div class="cnr"><div class="cnm">Andi Wirawan</div><div class="htag">HOST</div></div>
+          <div class="bbl-h">Halo semua! Sesi kita hari ini fokus ke persiapan interview Big Tech. Ada pertanyaan spesifik yang ingin dibahas?</div>
+          <div class="cmeta">19:02 <button class="lbtn" onclick="like(this)">👍 <span>0</span></button></div>
+        </div>
+      </div>
+      <div class="cmsg">
+        <div class="cav" style="background:#3a6ea8">DP</div>
+        <div class="cmc">
+          <div class="cnr"><div class="cnm">Dimas P.</div></div>
+          <div class="bbl-u">Kak, boleh cerita soal OA (Online Assessment) Google? Formatnya seperti apa?</div>
+          <div class="cmeta">19:03 <button class="lbtn" onclick="like(this)">👍 <span>4</span></button></div>
+        </div>
+      </div>
+      <div class="cmsg">
+        <div class="cav" style="background:#6b46c1">RH</div>
+        <div class="cmc">
+          <div class="cnr"><div class="cnm">Rizky H.</div></div>
+          <div class="bbl-b">Bagaimana cara memilih bahasa pemrograman saat interview? Apakah ada preferensi dari interviewer?</div>
+          <div class="cmeta">19:04 <button class="lbtn" onclick="like(this)">👍 <span>0</span></button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cin-bar">
+      <input id="cinput" class="cin" type="text" placeholder="Tulis komentar..."/>
+      <button class="sbtn" onclick="sendMsg()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="#fff" stroke="none"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Meta bar -->
+  <div class="meta-bar">
+    <div class="mc">
+      <div class="mi mip">
+        <svg viewBox="0 0 16 16" fill="none" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 8h6M8 5v6"/></svg>
+      </div>
+      <div class="mt"><div class="ml">Topik sesi ini</div><div class="mv">Technical Interview</div></div>
+    </div>
+    <div class="mc">
+      <div class="mi mig">
+        <svg viewBox="0 0 16 16" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14v-1a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v1"/><circle cx="7" cy="5" r="3"/><path d="M16 14v-1a4 4 0 0 0-3-3.87"/><path d="M13 2.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="mt"><div class="ml">Peserta aktif</div><div class="mv" id="mPeserta">243 orang</div></div>
+    </div>
+    <div class="mc">
+      <div class="mi mia">
+        <svg viewBox="0 0 16 16" fill="none" stroke="#D97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><polyline points="8,4 8,8 11,9.5"/></svg>
+      </div>
+      <div class="mt"><div class="ml">Waktu berjalan</div><div class="mv" id="mTimer">42:15 menit</div></div>
+    </div>
+    <div class="mc">
+      <div class="mi mic">
+        <svg viewBox="0 0 16 16" fill="none" stroke="#0891B2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10a2 2 0 0 1-2 2H4l-3 3V3a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v7z"/></svg>
+      </div>
+      <div class="mt"><div class="ml">Chat aktif</div><div class="mv" id="mChat">89 pesan</div></div>
+    </div>
+  </div>
+
+  <div class="upcoming-h">Sesi mendatang</div>
+
+  <div class="cards-row">
+    <!-- Card 1: Blue / Beasiswa -->
+    <div class="scard fade-up d1">
+      <div class="ctop c-blue">
+        <div class="ctags"><div class="tseg"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg>Segera</div><div class="tcat">Beasiswa</div></div>
+        <div class="ctitle">Q&amp;A Live: Persiapan IELTS untuk<br>Beasiswa Luar Negeri</div>
+        <div class="chost-row">
+          <div class="chost"><div class="hav"><svg viewBox="0 0 16 16"><path d="M8 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9.5a5 5 0 0 1 10 0v.5H3v-.5z" fill="#fff"/></svg></div><div><div class="hn">Anisa Putri</div><div class="ho">Rhodes Scholar, Oxford University</div></div></div>
+          <button class="pbtn"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg></button>
+        </div>
+      </div>
+      <div class="cbot">
+        <div class="cdate"><svg viewBox="0 0 16 16" fill="none" stroke="#929292" stroke-width="1.2"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1.5" y1="6" x2="14.5" y2="6"/></svg><span>Senin, 15 Mar 2026 • 16:00 WIB</span></div>
+        <div class="crow"><div class="cpart"><svg viewBox="0 0 16 16" fill="#929292"><ellipse cx="6" cy="4.5" rx="3.17" ry="3.17"/><rect x=".83" y="8.17" width="10.33" height="6.33" rx="2"/><ellipse cx="12" cy="4" rx="2" ry="2"/><rect x="10" y="8.5" width="5" height="5.5" rx="2"/></svg><span class="pn">320</span><span class="pt">/400 peserta</span></div><button class="breg" onclick="regCard(this)">Daftar</button></div>
+        <div class="ptrack"><div class="pfill f-blue" style="width:80%"></div></div>
+      </div>
+    </div>
+
+    <!-- Card 2: Blue / Tech & IT -->
+    <div class="scard fade-up d2">
+      <div class="ctop c-blue">
+        <div class="ctags"><div class="tseg"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg>Segera</div><div class="tcat">Tech &amp; IT</div></div>
+        <div class="ctitle">AMA: Karier di Google sebagai Software<br>Engineer</div>
+        <div class="chost-row">
+          <div class="chost"><div class="hav"><svg viewBox="0 0 16 16"><path d="M8 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9.5a5 5 0 0 1 10 0v.5H3v-.5z" fill="#fff"/></svg></div><div><div class="hn">Budi Santoso</div><div class="ho">SWE L5 @ Google US</div></div></div>
+          <button class="pbtn"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg></button>
+        </div>
+      </div>
+      <div class="cbot">
+        <div class="cdate"><svg viewBox="0 0 16 16" fill="none" stroke="#929292" stroke-width="1.2"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1.5" y1="6" x2="14.5" y2="6"/></svg><span>Senin, 10 Mar 2026 • 19:00 WIB</span></div>
+        <div class="crow"><div class="cpart"><svg viewBox="0 0 16 16" fill="#929292"><ellipse cx="6" cy="4.5" rx="3.17" ry="3.17"/><rect x=".83" y="8.17" width="10.33" height="6.33" rx="2"/><ellipse cx="12" cy="4" rx="2" ry="2"/><rect x="10" y="8.5" width="5" height="5.5" rx="2"/></svg><span class="pn">234</span><span class="pt">/500 peserta</span></div><button class="breg" onclick="regCard(this)">Daftar</button></div>
+        <div class="ptrack"><div class="pfill f-blue" style="width:46.8%"></div></div>
+      </div>
+    </div>
+
+    <!-- Card 3: Red / Beasiswa -->
+    <div class="scard fade-up d3">
+      <div class="ctop c-red">
+        <div class="ctags"><div class="tseg"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg>Segera</div><div class="tcat">Beasiswa</div></div>
+        <div class="ctitle">Q&amp;A Live: Persiapan IELTS untuk<br>Beasiswa Luar Negeri</div>
+        <div class="chost-row">
+          <div class="chost"><div class="hav"><svg viewBox="0 0 16 16"><path d="M8 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9.5a5 5 0 0 1 10 0v.5H3v-.5z" fill="#fff"/></svg></div><div><div class="hn">Anisa Putri</div><div class="ho">Rhodes Scholar, Oxford University</div></div></div>
+          <button class="pbtn"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg></button>
+        </div>
+      </div>
+      <div class="cbot">
+        <div class="cdate"><svg viewBox="0 0 16 16" fill="none" stroke="#929292" stroke-width="1.2"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1.5" y1="6" x2="14.5" y2="6"/></svg><span>Senin, 15 Mar 2026 • 16:00 WIB</span></div>
+        <div class="crow"><div class="cpart"><svg viewBox="0 0 16 16" fill="#929292"><ellipse cx="6" cy="4.5" rx="3.17" ry="3.17"/><rect x=".83" y="8.17" width="10.33" height="6.33" rx="2"/><ellipse cx="12" cy="4" rx="2" ry="2"/><rect x="10" y="8.5" width="5" height="5.5" rx="2"/></svg><span class="pn">320</span><span class="pt">/400 peserta</span></div><button class="breg" onclick="regCard(this)">Daftar</button></div>
+        <div class="ptrack"><div class="pfill f-red" style="width:80%"></div></div>
+      </div>
+    </div>
+
+    <!-- Card 4: Green / Pemerintahan -->
+    <div class="scard fade-up d4">
+      <div class="ctop c-green">
+        <div class="ctags"><div class="tseg"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg>Segera</div><div class="tcat">Pemerintahan</div></div>
+        <div class="ctitle">Panel Alumni: Tips Lolos CPNS 2026 dari<br>Berbagai Formasi</div>
+        <div class="chost-row">
+          <div class="chost"><div class="hav"><svg viewBox="0 0 16 16"><path d="M8 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9.5a5 5 0 0 1 10 0v.5H3v-.5z" fill="#fff"/></svg></div><div><div class="hn">Budi Santoso</div><div class="ho">Alumni STAN &amp; UI</div></div></div>
+          <button class="pbtn"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg></button>
+        </div>
+      </div>
+      <div class="cbot">
+        <div class="cdate"><svg viewBox="0 0 16 16" fill="none" stroke="#929292" stroke-width="1.2"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1.5" y1="6" x2="14.5" y2="6"/></svg><span>Rabu, 12 Mar 2026 • 14:00 WIB</span></div>
+        <div class="crow"><div class="cpart"><svg viewBox="0 0 16 16" fill="#929292"><ellipse cx="6" cy="4.5" rx="3.17" ry="3.17"/><rect x=".83" y="8.17" width="10.33" height="6.33" rx="2"/><ellipse cx="12" cy="4" rx="2" ry="2"/><rect x="10" y="8.5" width="5" height="5.5" rx="2"/></svg><span class="pn">512</span><span class="pt">/1.000 peserta</span></div><button class="breg" onclick="regCard(this)">Daftar</button></div>
+        <div class="ptrack"><div class="pfill f-green" style="width:51.2%"></div></div>
+      </div>
+    </div>
+
+    <!-- Card 5: Amber / Entrepreneur -->
+    <div class="scard fade-up d5">
+      <div class="ctop c-amber">
+        <div class="ctags"><div class="tseg">Terjadwal</div><div class="tcat">Entrepreneur</div></div>
+        <div class="ctitle">Talk: Memulai Startup dari Nol — Cerita<br>Founder B2B SaaS</div>
+        <div class="chost-row">
+          <div class="chost"><div class="hav"><svg viewBox="0 0 16 16"><path d="M8 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9.5a5 5 0 0 1 10 0v.5H3v-.5z" fill="#fff"/></svg></div><div><div class="hn">Kevin Hartono</div><div class="ho">Co-founder Karta.io</div></div></div>
+          <button class="pbtn"><svg viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9"/></svg></button>
+        </div>
+      </div>
+      <div class="cbot">
+        <div class="cdate"><svg viewBox="0 0 16 16" fill="none" stroke="#929292" stroke-width="1.2"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1.5" y1="6" x2="14.5" y2="6"/></svg><span style="color:#6A7282">Minggu, 16 Mar 2026 • 20:00 WIB</span></div>
+        <div class="crow"><div class="cpart"><svg viewBox="0 0 16 16" fill="#929292"><ellipse cx="6" cy="4.5" rx="3.17" ry="3.17"/><rect x=".83" y="8.17" width="10.33" height="6.33" rx="2"/><ellipse cx="12" cy="4" rx="2" ry="2"/><rect x="10" y="8.5" width="5" height="5.5" rx="2"/></svg><span style="font-size:12px;color:#929292">95/200 peserta</span></div><button class="breg" onclick="regCard(this)">Daftar</button></div>
+        <div class="ptrack"><div class="pfill f-amber" style="width:47.5%"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- NEWSLETTER -->
+<div class="newsletter">
+  <div><div class="nl-h">Dapatkan Update Thread Terbaru</div><div class="nl-d">Subscribe newsletter kami dan jangan lewatkan diskusi penting dari para alumni.</div></div>
+  <div class="nl-form">
+    <input class="nl-inp" id="nlInp" type="email" placeholder="Masukkan email kamu..."/>
+    <button class="nl-btn" id="nlBtn" onclick="subscribe()">Subscribe →</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ftop">
+    <div><div class="nl-h">Dapatkan Update Thread Terbaru</div><div class="nl-d">Subscribe newsletter kami dan jangan lewatkan diskusi penting dari para alumni.</div></div>
+    <div class="nl-form">
+      <input class="nl-inp" type="email" placeholder="Masukkan email kamu..."/>
+      <button class="nl-btn" onclick="subscribe()">Subscribe →</button>
+    </div>
+  </div>
+  <div class="fbody">
+    <div class="fbrand">
+      <div><div class="flogo"><span class="s">S</span><span class="r">ALTO</span></div><div class="ftagline">Let's Connect, Growth Together</div></div>
+      <div class="fdesc">Jembatan antara mahasiswa dan alumni<br>Indonesia. Berbagi ilmu, pengalaman, dan<br>membuka peluang tanpa batas untuk generasi<br>penerus bangsa.</div>
+      <div class="fcontacts">
+        <div class="fci"><svg viewBox="0 0 16 16" fill="#FF9B51"><rect x=".83" y="2.5" width="14.33" height="11" rx="2"/><path d="M.83 5 8 9.5 15.17 5" stroke="#29326C" stroke-width=".7" fill="none"/></svg>hello@salto.id</div>
+        <div class="fci"><svg viewBox="0 0 16 16" fill="#FF9B51"><path d="M13 11v1.5a1 1 0 0 1-1.1 1A12 12 0 0 1 .5 2.1 1 1 0 0 1 1.5 1H3a1 1 0 0 1 1 .9 7 7 0 0 0 .4 1.6 1 1 0 0 1-.23 1.06l-.54.54a8 8 0 0 0 3.17 3.17l.54-.54a1 1 0 0 1 1.06-.23 7 7 0 0 0 1.6.4A1 1 0 0 1 11 9h.5a1 1 0 0 1 1.5.87V11z"/></svg>+62 21 1234 5678</div>
+        <div class="fci"><svg viewBox="0 0 16 16" fill="#FF9B51"><path d="M8 .83a6.17 6.17 0 0 0-6.17 6.17C1.83 11.63 8 15.17 8 15.17s6.17-3.54 6.17-8.17A6.17 6.17 0 0 0 8 .83z"/><circle cx="8" cy="7" r="2" fill="#29326C"/></svg>Jakarta, Indonesia</div>
+      </div>
+      <div class="fsoc">
+        <button class="sbtn"><svg viewBox="0 0 16 16"><path d="M15.5 2a6.2 6.2 0 0 1-1.77.49 3.1 3.1 0 0 0 1.35-1.71 6.2 6.2 0 0 1-1.96.75 3.08 3.08 0 0 0-5.25 2.81A8.74 8.74 0 0 1 1.5 1.57a3.08 3.08 0 0 0 .95 4.11 3.06 3.06 0 0 1-1.4-.38v.04a3.08 3.08 0 0 0 2.47 3.02 3.1 3.1 0 0 1-1.39.05 3.08 3.08 0 0 0 2.88 2.14A6.19 6.19 0 0 1 .5 11.8 8.73 8.73 0 0 0 5.22 13.2c5.66 0 8.75-4.69 8.75-8.75l-.01-.4A6.26 6.26 0 0 0 15.5 2z"/></svg></button>
+        <button class="sbtn"><svg viewBox="0 0 16 16"><path d="M14.5 1h-3.17L8 6.08 4.33 1H.5L6.33 8.58.5 16h3.17L8 10.67 12.17 16h3.33L9.5 8.17 14.5 1z"/></svg></button>
+        <button class="sbtn"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.3"><rect x="1" y="1" width="14" height="14" rx="4"/><circle cx="8" cy="8" r="3"/><circle cx="11.5" cy="4.5" r=".8" fill="#fff" stroke="none"/></svg></button>
+        <button class="sbtn"><svg viewBox="0 0 16 16"><path d="M15.17 4.33s-.15-1.08-.6-1.55c-.58-.61-1.23-.62-1.52-.65C11 2.08 8 2.08 8 2.08s-3 0-5.05.05c-.3.03-.95.04-1.52.65-.46.47-.6 1.55-.6 1.55S.67 5.6.67 6.9v1.2c0 1.3.16 2.57.16 2.57s.14 1.08.6 1.55c.57.61 1.33.59 1.67.66 1.2.11 5.1.15 5.1.15s3 0 5.05-.15c.3-.03.94-.05 1.52-.66.45-.47.6-1.55.6-1.55s.16-1.27.16-2.57V6.9c0-1.3-.16-2.57-.16-2.57zM6.33 9.58V5.75l4.34 1.92-4.34 1.91z"/></svg></button>
+      </div>
+    </div>
+    <div class="fcol"><div class="fcol-t">Platform</div><div class="fcol-links"><a href="#">Jelajahi Thread</a><a href="#">Mentorship</a><a href="#">Direktori Alumni</a><a href="#">Leaderboard</a><a href="#">Live Session</a></div></div>
+    <div class="fcol"><div class="fcol-t">Komunitas</div><div class="fcol-links"><a href="#">Bergabung sebagai Alumni</a><a href="#">Verifikasi Akun</a><a href="#">Program Mentor</a><a href="#">Event &amp; Webinar</a><a href="#">Blog</a></div></div>
+    <div class="fcol"><div class="fcol-t">Dukungan</div><div class="fcol-links"><a href="#">Pusat Bantuan</a><a href="#">Panduan Penggunaan</a><a href="#">Syarat &amp; Ketentuan</a><a href="#">Laporkan Masalah</a><a href="#">Kebijakan Privasi</a></div></div>
+  </div>
+  <hr class="fdiv"/>
+  <div class="fbot">
+    <div class="fcopy">© 2026 SALTO — Student Alumni Link &amp; Talk Online. Made with <span class="heart">❤</span>️ in Indonesia.</div>
+    <div class="flinks"><a href="#">Privasi</a><a href="#">Cookies</a><a href="#">Aksesibilitas</a></div>
+  </div>
+</footer>
+
+<script>
+// Timer
+let s=42*60+15;
+setInterval(()=>{s++;const m=Math.floor(s/60),sec=s%60;document.getElementById('mTimer').textContent=`${m}:${sec.toString().padStart(2,'0')} menit`;},1000);
+
+// Chat counter
+let cc=89;
+setInterval(()=>{if(Math.random()<.3){cc++;document.getElementById('mChat').textContent=cc+' pesan';}},5000);
+
+// Send message
+const avColors=['#1a4a8a','#6b46c1','#2d6a4f','#8b5e3c','#0A2647'];
+let ci=3;
+function sendMsg(){
+  const inp=document.getElementById('cinput');
+  const t=inp.value.trim();if(!t)return;
+  inp.value='';
+  addMsg('Kamu','KM',t,avColors[ci%avColors.length],'bbl-b',true);
+  ci++;cc++;document.getElementById('mChat').textContent=cc+' pesan';
+}
+document.getElementById('cinput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+
+function addMsg(name,init,text,color,cls,isMe){
+  const box=document.getElementById('chatBox');
+  const now=new Date(),time=`${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const d=document.createElement('div');d.className='cmsg';
+  d.innerHTML=`<div class="cav" style="background:${color}">${init}</div><div class="cmc"><div class="cnr"><div class="cnm">${name}${isMe?' <span style="font-size:10px;color:#7783D4">(kamu)</span>':''}</div></div><div class="${cls}">${text}</div><div class="cmeta">${time} <button class="lbtn" onclick="like(this)">👍 <span>0</span></button></div></div>`;
+  box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+
+function like(btn){const s=btn.querySelector('span');s.textContent=+s.textContent+1;}
+
+// Simulated messages
+const fake=[
+  ['FS','Firman S.','Tips negotiate salary di Big Tech gimana kak?','#2c5282','bbl-u'],
+  ['NR','Nadira R.','Perlukah punya GitHub aktif untuk melamar?','#5a3472','bbl-b'],
+  ['AR','Arif P.','Google pakai platform apa buat coding interview-nya?','#1a5276','bbl-u'],
+  ['DR','Dian R.','Culture shock kerja di luar negeri seperti apa kak?','#145a32','bbl-b'],
+];
+let fi=0;
+setInterval(()=>{if(Math.random()<.4&&fi<fake.length){const[i,n,t,c,cls]=fake[fi++];addMsg(n,i,t,c,cls,false);cc++;document.getElementById('mChat').textContent=cc+' pesan';}},7000);
+
+// Register
+function regCard(btn){if(btn.textContent.includes('✓'))return;btn.textContent='✓ Terdaftar';btn.style.background='#059669';}
+
+// Subscribe
+function subscribe(){
+  const inp=document.getElementById('nlInp')||document.querySelector('.nl-inp');
+  const btn=document.getElementById('nlBtn')||document.querySelector('.nl-btn');
+  if(!inp||!inp.value.includes('@')){if(inp){inp.style.outline='2px solid #ef4444';setTimeout(()=>inp.style.outline='',1500);}return;}
+  btn.textContent='✓ Berhasil!';btn.style.background='rgba(5,150,105,.7)';inp.value='';
+  setTimeout(()=>{btn.textContent='Subscribe →';btn.style.background='';},3000);
+}
+</script>
+</body>
+</html>
