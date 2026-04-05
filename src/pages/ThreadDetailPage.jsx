@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useScrollDirection } from "../hooks/useScrollDirection";
 import {
   buttonFx,
   linkFx,
@@ -102,6 +103,8 @@ export default function ThreadDetailPage() {
   const [sortMode, setSortMode] = useState("popular");
   const [viewerIsAlumni, setViewerIsAlumni] = useState(currentViewer.isAlumni);
   const [submittedAnswers, setSubmittedAnswers] = useState([]);
+  const scrollDirection = useScrollDirection();
+  const isAuthenticated = !!localStorage.getItem("authToken");
 
   const viewerProfile = useMemo(
     () => ({
@@ -159,7 +162,10 @@ export default function ThreadDetailPage() {
 
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
-      <header className="sticky top-0 z-30 h-16.25 border-b border-(--color-light-blue)/70 bg-(--color-light-blue)/50 backdrop-blur-[6px]">
+      <header
+        className={`sticky z-30 h-16.25 border-b border-(--color-light-blue)/70 bg-(--color-light-blue)/50 backdrop-blur-[6px] transition-all duration-300 ${
+          scrollDirection === "down" ? "-top-25" : "top-0"
+        }`}>
         <div className="mx-auto flex h-full w-full max-w-316 items-center justify-between gap-4 px-4 lg:px-0">
           <Link to="/" className={`${linkFx} leading-tight`}>
             <p className="text-[20px] tracking-[2px] font-black">
@@ -194,46 +200,56 @@ export default function ThreadDetailPage() {
               <span className="h-1.75 w-1.75 rounded-full bg-red-500" />
               Live
             </a>
-
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} text-(--color-dark) hover:text-(--color-like-blue)`}>
-              Komunitas
-            </a>
           </nav>
 
           <div className="flex items-center gap-2">
             <Link
               to="/login"
-              className={`${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
+              className={`md:hidden ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
               Masuk
             </Link>
-
-            <button
-              type="button"
-              className={`${buttonFx} rounded-full bg-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-white`}>
-              Daftar
-            </button>
+            {!isAuthenticated ? (
+              <Link
+                to="/login"
+                className={`hidden md:flex ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
+                Masuk
+              </Link>
+            ) : (
+              <a
+                href="#"
+                className={`hidden md:flex ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
+                Profil
+              </a>
+            )}
           </div>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-3.5 lg:px-0">
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,912px)_320px]">
-          <section className="space-y-3">
-            <nav className="flex flex-wrap items-center gap-2 px-1 text-[14px] leading-5 text-(--color-secondary)">
+          <section className="space-y-3 min-w-0">
+            <nav className="flex flex-nowrap items-center gap-1.5 overflow-hidden px-1 text-[13px] md:text-[14px] leading-5 text-(--color-secondary)">
               {threadBreadcrumbs.map((item, index) => (
-                <div key={item} className="inline-flex items-center gap-2">
+                <div
+                  key={item}
+                  className={`flex items-center gap-1.5 ${
+                    index === threadBreadcrumbs.length - 1
+                      ? "min-w-0 shrink"
+                      : "shrink-0"
+                  }`}>
                   <span
-                    className={
+                    className={`truncate ${
                       index === threadBreadcrumbs.length - 1
                         ? "text-(--color-dark)"
                         : ""
-                    }>
+                    }`}>
                     {item}
                   </span>
-                  {index < threadBreadcrumbs.length - 1 ? <span>/</span> : null}
+                  {index < threadBreadcrumbs.length - 1 ? (
+                    <span className="shrink-0 text-[10px] md:text-[12px]">
+                      /
+                    </span>
+                  ) : null}
                 </div>
               ))}
             </nav>
