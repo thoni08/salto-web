@@ -14,3 +14,11 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Team Handoff Docs
+
+- Handoff index: [docs/thread-detail-handoff.md](docs/thread-detail-handoff.md)
+- UI Style Guide global: [docs/ui-style-guide-global.md](docs/ui-style-guide-global.md)
+- API Integration Guide frontend-backend: [docs/api-integration-guide-frontend-backend.md](docs/api-integration-guide-frontend-backend.md)
+- OpenAPI spec: [docs/openapi-thread-detail.yaml](docs/openapi-thread-detail.yaml)
+- Environment template for API mode: [.env.example](.env.example)
