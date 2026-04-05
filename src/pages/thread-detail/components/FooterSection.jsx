@@ -58,16 +58,16 @@ export function FooterSection({ socialLinks }) {
               bangsa.
             </p>
 
-            <div className="mt-4 space-y-1.75 text-[13px] leading-[19.5px] text-white/90">
-              <p className="inline-flex items-center gap-2">
+            <div className="mt-4 flex flex-col gap-2 text-[13px] leading-[19.5px] text-white/90">
+              <p className="flex items-center gap-2">
                 <Icon icon={Mail} className="h-4 w-4" />
                 hello@salto.id
               </p>
-              <p className="inline-flex items-center gap-2">
+              <p className="flex items-center gap-2">
                 <Icon icon={Phone} className="h-4 w-4" />
                 +62 21 1234 5678
               </p>
-              <p className="inline-flex items-center gap-2">
+              <p className="flex items-center gap-2">
                 <Icon icon={MapPin} className="h-4 w-4" />
                 Jakarta, Indonesia
               </p>
