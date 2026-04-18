@@ -1,0 +1,403 @@
+openapi: 3.1.0
+info:
+  title: Salto Thread Detail API Contract
+  version: 1.0.0
+  description: |
+    Contract API untuk integrasi frontend-backend halaman Thread Detail.
+    Endpoint disusun agar kompatibel dengan adapter frontend di src/pages/thread-detail/threadDetailApi.js.
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+tags:
+  - name: Auth
+    description: Endpoint autentikasi user aktif
+  - name: Threads
+    description: Endpoint thread detail dan jawaban
+paths:
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user
+      operationId: getAuthMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResponse"
+              example:
+                id: user-123
+                name: Rizky Mahendra
+                role: alumni
+                isAlumni: true
+                subtitle: Alumni IF'24 · Software Engineer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+              example:
+                code: UNAUTHORIZED
+                message: Authentication required.
+
+  /threads/{threadId}:
+    get:
+      tags: [Threads]
+      summary: Get thread detail data
+      description: Mengambil seluruh data untuk satu halaman thread detail.
+      operationId: getThreadDetail
+      parameters:
+        - in: path
+          name: threadId
+          required: true
+          schema:
+            type: string
+          example: thread-big-tech-001
+      responses:
+        "200":
+          description: Thread detail payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThreadDetailResponse"
+        "404":
+          description: Thread not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+              example:
+                code: THREAD_NOT_FOUND
+                message: Thread tidak ditemukan.
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /threads/{threadId}/answers:
+    post:
+      tags: [Threads]
+      summary: Submit answer to thread
+      operationId: createThreadAnswer
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: threadId
+          required: true
+          schema:
+            type: string
+          example: thread-big-tech-001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerCreateRequest"
+            example:
+              content: >-
+                Ini jawaban saya tentang persiapan technical interview.
+                Fokus pada latihan terstruktur, mock interview mingguan,
+                dan review pattern agar progres terukur.
+      responses:
+        "201":
+          description: Answer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerCreateResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+              example:
+                code: VALIDATION_ERROR
+                message: Jawaban minimal 100 karakter.
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Forbidden (non alumni)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+              example:
+                code: FORBIDDEN
+                message: Hanya alumni yang bisa menjawab thread ini.
+        "404":
+          description: Thread not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
+            - type: "null"
+
+    AuthMeResponse:
+      type: object
+      required: [id, name, role, isAlumni]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isAlumni:
+          type: boolean
+        subtitle:
+          type: string
+
+    UserRole:
+      type: string
+      enum: [mahasiswa, alumni, mentor, expert, admin]
+
+    BadgeType:
+      type: string
+      enum: [top, mentor, expert, phd]
+
+    ThreadCategoryChip:
+      type: object
+      required: [id, label, tone]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        tone:
+          type: string
+          description: Tone key UI, mis. career, tech, internship.
+
+    ThreadHeader:
+      type: object
+      required:
+        - id
+        - title
+        - author
+        - role
+        - createdAt
+        - views
+        - answersCount
+        - breadcrumbs
+        - categoryChips
+        - introParagraphs
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        views:
+          type: integer
+          minimum: 0
+        answersCount:
+          type: integer
+          minimum: 0
+        breadcrumbs:
+          type: array
+          items:
+            type: string
+        categoryChips:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThreadCategoryChip"
+        introParagraphs:
+          type: array
+          items:
+            type: string
+
+    Reply:
+      type: object
+      required: [id, author, role, text, createdAt, likes]
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+        role:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        likes:
+          type: integer
+          minimum: 0
+
+    Answer:
+      type: object
+      required:
+        - id
+        - author
+        - accent
+        - subtitle
+        - createdAt
+        - badges
+        - likes
+        - paragraphs
+        - replies
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+        accent:
+          type: boolean
+        subtitle:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/BadgeType"
+        likes:
+          type: integer
+          minimum: 0
+        paragraphs:
+          type: array
+          items:
+            type: string
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reply"
+
+    ContributorStats:
+      type: object
+      required: [answer, approved, joined]
+      properties:
+        answer:
+          type: string
+        approved:
+          type: string
+        joined:
+          type: string
+
+    Contributor:
+      type: object
+      required: [id, name, role, org, badges, stats]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        org:
+          type: string
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/BadgeType"
+        stats:
+          $ref: "#/components/schemas/ContributorStats"
+
+    ThreadStatRow:
+      type: object
+      required: [id, label, value, tone]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        tone:
+          type: string
+
+    ThreadDetailResponse:
+      type: object
+      required: [thread, answers, contributors, stats, relatedThreads]
+      properties:
+        thread:
+          $ref: "#/components/schemas/ThreadHeader"
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Answer"
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contributor"
+        stats:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThreadStatRow"
+        relatedThreads:
+          type: array
+          items:
+            type: string
+
+    AnswerCreateRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 100
+
+    AnswerCreateResponse:
+      type: object
+      required: [message, answer]
+      properties:
+        message:
+          type: string
+        answer:
+          $ref: "#/components/schemas/Answer"

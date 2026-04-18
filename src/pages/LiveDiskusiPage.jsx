@@ -1,82 +1,152 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck,
   Clock3,
+  Info,
   MessageCircle,
   Play,
   Send,
   Star,
-  Video,
   Users,
+  Video,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { SiteHeader } from "./components/SiteHeader.jsx";
-import { FooterSection } from "./pages/thread-detail/components/FooterSection.jsx";
-import { socialLinks } from "./pages/thread-detail/data";
+import { SiteHeader } from "../components/SiteHeader.jsx";
+import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
+import { socialLinks } from "./thread-detail/data";
+import { LiveChatMessage } from "./live-diskusi/components/index.js";
 
-const liveMessages = [
+const initialMessages = [
   {
-    id: "m-1",
+    initials: "AW",
     name: "Andi Wirawan",
-    role: "HOST",
-    text: "Halo semua! Sesi kita hari ini fokus ke persiapan interview Big Tech. Ada pertanyaan spesifik yang ingin dibahas?",
+    tag: "HOST",
+    color: "#0A2647",
+    tone: "host",
+    text: "Halo semua! Sesi kita hari ini fokus ke persiapan technical interview. Ada pertanyaan spesifik yang ingin dibahas?",
     time: "19:02",
+    likes: 0,
   },
   {
-    id: "m-2",
+    initials: "DP",
     name: "Dimas P.",
+    color: "#3a6ea8",
+    tone: "alt",
     text: "Kak, boleh cerita soal OA (Online Assessment) Google? Formatnya seperti apa?",
     time: "19:03",
+    likes: 4,
   },
   {
-    id: "m-3",
+    initials: "RH",
     name: "Rizky H.",
+    color: "#6b46c1",
+    tone: "default",
     text: "Bagaimana cara memilih bahasa pemrograman saat interview? Apakah ada preferensi dari interviewer?",
     time: "19:04",
+    likes: 0,
   },
 ];
 
-const upcomingCards = [
+const upcomingSessions = [
   {
-    id: "u-1",
-    tone: "from-[#1d4ed8] to-[#1e40af]",
+    id: "upcoming-1",
     title: "Q&A Live: Persiapan IELTS untuk Beasiswa Luar Negeri",
     host: "Anisa Putri",
-    org: "Rhodes Scholar, Oxford University",
+    hostRole: "Rhodes Scholar, Oxford University",
     schedule: "Senin, 15 Mar 2026 • 16:00 WIB",
+    fill: "from-[#1d4ed8] to-[#1e40af]",
+    progress: "w-3/4",
     participants: "320 / 450 peserta",
   },
   {
-    id: "u-2",
-    tone: "from-[#1e40af] to-[#0f3aa2]",
+    id: "upcoming-2",
     title: "AMA: Karier di Google sebagai Software Engineer",
     host: "Budi Santoso",
-    org: "SWE L5 @ Google US",
-    schedule: "Senin, 16 Mar 2026 • 19:00 WIB",
+    hostRole: "SWE L5 @ Google US",
+    schedule: "Selasa, 16 Mar 2026 • 19:00 WIB",
+    fill: "from-[#1e40af] to-[#1e3a8a]",
+    progress: "w-2/3",
     participants: "284 / 500 peserta",
   },
   {
-    id: "u-3",
-    tone: "from-[#dc2626] to-[#b91c1c]",
-    title: "Q&A Live: Persiapan IELTS untuk Beasiswa Luar Negeri",
-    host: "Anisa Putri",
-    org: "Rhodes Scholar, Oxford University",
-    schedule: "Senin, 15 Mar 2026 • 16:00 WIB",
-    participants: "320 / 450 peserta",
+    id: "upcoming-3",
+    title: "Panel Alumni: Tips Lolos CPNS 2026 Berbagai Kementerian",
+    host: "Nisa Rahma",
+    hostRole: "Policy Analyst @ Kemenkeu",
+    schedule: "Rabu, 17 Mar 2026 • 14:00 WIB",
+    fill: "from-[#dc2626] to-[#b91c1c]",
+    progress: "w-4/5",
+    participants: "512 / 1000 peserta",
   },
   {
-    id: "u-4",
-    tone: "from-[#047857] to-[#065f46]",
-    title: "Panel Alumni: Tips Lolos CPNS 2026 Berbagai Kementerian",
-    host: "Budi Santoso",
-    org: "SWE L5 @ Google US",
-    schedule: "Rabu, 17 Mar 2026 • 14:00 WIB",
-    participants: "512 / 1000 peserta",
+    id: "upcoming-4",
+    title: "Bootcamp Live: System Design untuk Entry-Level",
+    host: "Fajar Pratama",
+    hostRole: "Staff Engineer @ Gojek",
+    schedule: "Kamis, 18 Mar 2026 • 20:00 WIB",
+    fill: "from-[#0f766e] to-[#115e59]",
+    progress: "w-1/2",
+    participants: "168 / 350 peserta",
   },
 ];
 
-function App() {
+export default function LiveDiskusiPage() {
+  const [messages, setMessages] = useState(initialMessages);
+  const [draft, setDraft] = useState("");
+  const [timerSeconds, setTimerSeconds] = useState(42 * 60 + 15);
+  const [chatCount, setChatCount] = useState(89);
+  const chatBoxRef = useRef(null);
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setTimerSeconds((previous) => previous + 1);
+    }, 1000);
+
+    const chatId = window.setInterval(() => {
+      setChatCount((previous) => previous + (Math.random() < 0.3 ? 1 : 0));
+    }, 5000);
+
+    return () => {
+      window.clearInterval(timerId);
+      window.clearInterval(chatId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const timerLabel = useMemo(() => {
+    const minutes = Math.floor(timerSeconds / 60);
+    const seconds = timerSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")} menit`;
+  }, [timerSeconds]);
+
+  const handleSend = () => {
+    const text = draft.trim();
+    if (!text) return;
+
+    setMessages((previous) => [
+      ...previous,
+      {
+        initials: "KM",
+        name: "Kamu",
+        color: "#7783d4",
+        tone: "default",
+        text,
+        time: new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        likes: 0,
+      },
+    ]);
+    setDraft("");
+    setChatCount((previous) => previous + 1);
+  };
+
   return (
-    <div className="min-h-screen bg-[#f1f5f9] text-(--color-dark)">
+    <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
         activeHref="/live"
         authActions={[
@@ -153,48 +223,42 @@ function App() {
               <MessageCircle className="h-4 w-4" /> Live Chat
             </header>
 
-            <div className="space-y-4 py-5">
-              {liveMessages.map((message) => (
-                <div key={message.id} className="flex gap-3">
-                  <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#dbeafe] text-[11px] font-bold text-[#1d4ed8]">
-                    {message.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((part) => part[0])
-                      .join("")}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                      <span className="font-semibold text-(--color-dark)">
-                        {message.name}
-                      </span>
-                      {message.role ? (
-                        <span className="rounded-full bg-[#fef3c7] px-2 py-0.5 text-[10px] font-bold text-[#92400e]">
-                          {message.role}
-                        </span>
-                      ) : null}
-                      <span className="text-(--color-secondary)">
-                        {message.time}
-                      </span>
-                    </div>
-                    <p className="mt-1 rounded-2xl bg-[#eff3f8] px-4 py-2.5 text-[12px] leading-5 text-[#4b5563]">
-                      {message.text}
-                    </p>
-                  </div>
-                </div>
+            <div
+              ref={chatBoxRef}
+              className="grid max-h-95 gap-4 overflow-y-auto py-5">
+              {messages.map((message, index) => (
+                <LiveChatMessage
+                  key={`${message.name}-${index}`}
+                  message={message}
+                  onLike={() =>
+                    setMessages((previous) =>
+                      previous.map((item, currentIndex) =>
+                        currentIndex === index
+                          ? { ...item, likes: item.likes + 1 }
+                          : item,
+                      ),
+                    )
+                  }
+                />
               ))}
             </div>
 
             <div className="flex items-center gap-3 border-t border-[#eef1f6] pt-4">
               <input
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") handleSend();
+                }}
                 type="text"
                 placeholder="Tulis komentar..."
                 className="h-12 flex-1 rounded-full border border-[#e3e8f4] bg-[#f8fafc] px-4 text-[14px] outline-none transition focus:border-(--color-like-blue) focus:ring-2 focus:ring-(--color-light-blue)"
               />
               <button
                 type="button"
-                aria-label="Kirim"
-                className="grid h-10 w-10 place-items-center rounded-full bg-(--color-like-blue) text-white transition hover:opacity-90">
+                onClick={handleSend}
+                aria-label="Kirim komentar"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--color-like-blue) text-white transition hover:opacity-90">
                 <Send className="h-4 w-4" />
               </button>
             </div>
@@ -202,10 +266,10 @@ function App() {
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              [BadgeCheck, "Topik sesi ini", "Technical interview"],
+              [Info, "Topik sesi ini", "Technical Interview"],
               [Users, "Peserta aktif", "243 orang"],
-              [Clock3, "Waktu berjalan", "42+ menit"],
-              [MessageCircle, "Chat aktif", "89 pesan"],
+              [Clock3, "Waktu berjalan", timerLabel],
+              [MessageCircle, "Chat aktif", `${chatCount} pesan`],
             ].map(([icon, label, value]) => {
               const StatIcon = icon;
               return (
@@ -232,29 +296,25 @@ function App() {
             <h3 className="text-[30px] font-bold text-(--color-dark)">
               Sesi mendatang
             </h3>
-            <Link
-              to="/live"
-              className="text-[13px] font-semibold text-(--color-like-blue) hover:opacity-80">
-              Lihat semua
-            </Link>
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {upcomingCards.map((card) => (
+            {upcomingSessions.map((session) => (
               <article
-                key={card.id}
+                key={session.id}
                 className="overflow-hidden rounded-2xl border border-[#e4eaf7] bg-white shadow-[0_16px_36px_-30px_rgba(37,52,63,.45)]">
-                <div className={`bg-linear-to-br ${card.tone} p-4 text-white`}>
+                <div
+                  className={`bg-linear-to-br ${session.fill} p-4 text-white`}>
                   <p className="mb-1 text-[11px] font-semibold text-white/85">
                     Live Session
                   </p>
                   <h4 className="min-h-12 text-[14px] leading-5 font-bold">
-                    {card.title}
+                    {session.title}
                   </h4>
                   <div className="mt-4 flex items-center justify-between text-[11px] text-white/90">
                     <div>
-                      <p className="font-semibold">{card.host}</p>
-                      <p>{card.org}</p>
+                      <p className="font-semibold">{session.host}</p>
+                      <p>{session.hostRole}</p>
                     </div>
                     <button
                       type="button"
@@ -267,20 +327,22 @@ function App() {
 
                 <div className="space-y-2 p-4">
                   <p className="text-[11px] text-(--color-secondary)">
-                    {card.schedule}
+                    {session.schedule}
                   </p>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e8edf8]">
-                    <div className="h-full w-3/4 rounded-full bg-(--color-like-blue)" />
+                    <div
+                      className={`h-full rounded-full bg-(--color-like-blue) ${session.progress}`}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] text-(--color-secondary)">
-                      {card.participants}
+                      {session.participants}
                     </p>
-                    <Link
-                      to="/signup"
+                    <button
+                      type="button"
                       className="rounded-full bg-(--color-dark) px-3 py-1 text-[11px] font-semibold text-white hover:opacity-90">
                       Daftar
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </article>
@@ -293,5 +355,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
