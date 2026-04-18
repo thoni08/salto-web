@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthField } from "../components/auth/AuthField.jsx";
+import { AuthShell } from "../components/auth/AuthShell.jsx";
 
 function LoginPage() {
   const [formValues, setFormValues] = useState({
@@ -35,8 +37,8 @@ function LoginPage() {
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setFormValues((prev) => ({
-      ...prev,
+    setFormValues((previous) => ({
+      ...previous,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
@@ -44,7 +46,7 @@ function LoginPage() {
   const handleBlur = (event) => {
     const { name } = event.target;
     if (name === "email" || name === "password") {
-      setTouched((prev) => ({ ...prev, [name]: true }));
+      setTouched((previous) => ({ ...previous, [name]: true }));
     }
   };
 
@@ -60,41 +62,32 @@ function LoginPage() {
       return;
     }
 
+    localStorage.setItem("authToken", "dummy-token-123");
     navigate("/");
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--color-gray) px-4 py-12 font-sans">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-80"
-        style={{
-          background:
-            "radial-gradient(circle at top, var(--color-light-blue), transparent 42%), radial-gradient(circle at bottom, var(--color-light-blue), transparent 36%)",
-        }}
-      />
-
-      <section
-        className="relative w-full max-w-120 rounded-3xl border border-(--color-gray) bg-white p-7 backdrop-blur-sm"
-        aria-label="Form login">
-        <header className="mb-6 text-center">
-          <h1 className="text-[2rem] font-extrabold tracking-tight text-(--color-dark)">
-            Selamat Datang
-          </h1>
-          <p className="text-sm leading-relaxed text-(--color-secondary)">
-            Masuk untuk melanjutkan diskusimu bersama alumni
-          </p>
-        </header>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-semibold text-(--color-dark)">
-              Email<span className="ml-0.5 text-red-600">*</span>
-            </label>
-
+    <AuthShell
+      title="Selamat Datang"
+      subtitle="Masuk untuk melanjutkan diskusimu bersama alumni"
+      footer={
+        <footer className="border-t border-(--color-gray) pt-5 text-center text-sm text-(--color-secondary)">
+          Belum punya akun?{" "}
+          <Link
+            to="/signup"
+            className="font-semibold text-(--color-like-blue) transition hover:opacity-80">
+            Daftar Sekarang
+          </Link>
+        </footer>
+      }>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="grid gap-5">
+          <AuthField
+            id="email"
+            label="Email"
+            error={emailHasError ? errors.email : ""}>
             <div
-              className={`mt-1.5 group flex items-center rounded-2xl border bg-(--color-gray) px-3 transition ${
+              className={`group flex items-center rounded-2xl border bg-(--color-gray) px-3 transition ${
                 emailHasError
                   ? "border-red-600 focus-within:border-red-600"
                   : "border-(--color-gray) focus-within:border-(--color-gray) focus-within:ring-2 focus-within:ring-(--color-light-blue)"
@@ -119,27 +112,14 @@ function LoginPage() {
                 className="h-11 w-full bg-transparent text-sm text-(--color-dark) outline-none placeholder:text-(--color-secondary)"
               />
             </div>
+          </AuthField>
 
-            <p
-              id="email-error"
-              aria-live="polite"
-              className={`min-h-5 text-xs font-medium ${
-                emailHasError ? "text-red-600" : "text-transparent"
-              }`}>
-              {emailHasError ? errors.email : ""}
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-semibold text-(--color-dark)">
-              Password
-              <span className="ml-0.5 text-red-600">*</span>
-            </label>
-
+          <AuthField
+            id="password"
+            label="Password"
+            error={passwordHasError ? errors.password : ""}>
             <div
-              className={`mt-1.5 group flex items-center rounded-2xl border bg-(--color-gray) px-3 transition ${
+              className={`group flex items-center rounded-2xl border bg-(--color-gray) px-3 transition ${
                 passwordHasError
                   ? "border-red-600 focus-within:border-red-600"
                   : "border-(--color-gray) focus-within:border-(--color-gray) focus-within:ring-2 focus-within:ring-(--color-light-blue)"
@@ -168,7 +148,7 @@ function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() => setShowPassword((previous) => !previous)}
                 aria-label={
                   showPassword ? "Sembunyikan password" : "Tampilkan password"
                 }
@@ -180,19 +160,10 @@ function LoginPage() {
                 )}
               </button>
             </div>
-
-            <p
-              id="password-error"
-              aria-live="polite"
-              className={`min-h-5 text-xs font-medium ${
-                passwordHasError ? "text-red-600" : "text-transparent"
-              }`}>
-              {passwordHasError ? errors.password : ""}
-            </p>
-          </div>
+          </AuthField>
 
           <div className="flex items-center justify-between gap-3">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-(--color-secondary)    ">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-(--color-secondary)">
               <input
                 name="rememberMe"
                 type="checkbox"
@@ -213,7 +184,7 @@ function LoginPage() {
 
           <button
             type="submit"
-            className="mt-6 h-12 w-full rounded-2xl bg-(--color-dark) text-base font-bold text-white shadow-[0_14px_24px_-16px_rgba(37,52,63,0.9)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-light-blue) active:translate-y-px active:opacity-90">
+            className="mt-1 h-12 w-full rounded-2xl bg-(--color-dark) text-base font-bold text-white shadow-[0_14px_24px_-16px_rgba(37,52,63,0.9)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-light-blue) active:translate-y-px active:opacity-90">
             Masuk
           </button>
 
@@ -222,19 +193,9 @@ function LoginPage() {
               Periksa kembali email dan password sebelum masuk.
             </p>
           ) : null}
-        </form>
-
-        <footer className="border-t border-(--color-gray) pt-5 text-center text-sm text-(--color-secondary)">
-          Belum punya akun?{" "}
-          <Link
-            href="/signup"
-            onClick={handlePlaceholderClick}
-            className="font-semibold text-(--color-like-blue) transition hover:opacity-80">
-            Daftar Sekarang
-          </Link>
-        </footer>
-      </section>
-    </main>
+        </div>
+      </form>
+    </AuthShell>
   );
 }
 
