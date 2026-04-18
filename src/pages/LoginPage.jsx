@@ -60,6 +60,7 @@ function LoginPage() {
       return;
     }
 
+    localStorage.setItem("authToken", "dummy-token-123");
     navigate("/");
   };
 
