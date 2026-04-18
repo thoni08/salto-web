@@ -13,7 +13,7 @@ export function MobileNavbar() {
   const navItems = [
     { path: "/", icon: Home, label: "Beranda" },
     { path: "/thread/25-885", icon: MessageSquare, label: "Diskusi" },
-    { path: "#", icon: Radio, label: "Live" },
+    { path: "/live", icon: Radio, label: "Live" },
   ];
 
   return (
@@ -24,19 +24,6 @@ export function MobileNavbar() {
       aria-label="Mobile navigation">
       {navItems.map(({ path, icon, label }) => {
         const active = isActive(path);
-
-        if (path === "#") {
-          return (
-            <a
-              key={label}
-              href="#"
-              className={`mx-auto flex w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-all text-(--color-secondary) hover:text-(--color-dark)`}
-              title={label}>
-              <Icon icon={icon} className="h-5 w-5 stroke-[1.8px]" />
-              <span className="text-[10px] font-medium">{label}</span>
-            </a>
-          );
-        }
 
         return (
           <Link

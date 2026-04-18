@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import {
   buttonFx,
@@ -162,68 +163,20 @@ export default function ThreadDetailPage() {
 
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
-      <header
-        className={`sticky z-30 h-16.25 border-b border-(--color-light-blue)/70 bg-(--color-light-blue)/50 backdrop-blur-[6px] transition-all duration-300 ${
+      <SiteHeader
+        activeHref="/thread/25-885"
+        className={`transition-all duration-300 ${
           scrollDirection === "down" ? "-top-25" : "top-0"
-        }`}>
-        <div className="mx-auto flex h-full w-full max-w-316 items-center justify-between gap-4 px-4 lg:px-0">
-          <Link to="/" className={`${linkFx} leading-tight`}>
-            <p className="text-[20px] tracking-[2px] font-black">
-              <span className="text-(--color-primary)">S</span>
-              <span className="text-(--color-dark)">ALTO</span>
-            </p>
-            <p className="text-[10px] leading-4.5 text-(--color-secondary)">
-              Let&apos;s Connect, Grow Together
-            </p>
-          </Link>
-
-          <nav className="hidden items-center gap-5 text-[14px] leading-4.5 md:flex">
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} text-(--color-dark) hover:text-(--color-like-blue)`}>
-              Beranda
-            </a>
-
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} flex flex-col items-center text-(--color-dark) font-bold`}>
-              Diskusi
-              <span className="mt-0.75 h-0.5 w-13.25 rounded-full bg-(--color-like-blue)" />
-            </a>
-
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} inline-flex items-center gap-1.25 text-(--color-dark) hover:text-(--color-like-blue)`}>
-              <span className="h-1.75 w-1.75 rounded-full bg-red-500" />
-              Live
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className={`md:hidden ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
-              Masuk
-            </Link>
-            {!isAuthenticated ? (
-              <Link
-                to="/login"
-                className={`hidden md:flex ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
-                Masuk
-              </Link>
-            ) : (
-              <a
-                href="#"
-                className={`hidden md:flex ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
-                Profil
-              </a>
-            )}
-          </div>
-        </div>
-      </header>
+        }`}
+        authActions={
+          isAuthenticated
+            ? [{ label: "Profil", to: "#", variant: "outline" }]
+            : [
+                { label: "Masuk", to: "/login", variant: "outline" },
+                { label: "Daftar", to: "/signup", variant: "solid" },
+              ]
+        }
+      />
 
       <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-3.5 lg:px-0">
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,912px)_320px]">
