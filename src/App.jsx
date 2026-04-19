@@ -18,9 +18,9 @@ function App() {
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           <Link
-            to="/thread/25-885"
+            to="/thread"
             className="rounded-full bg-(--color-dark) px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90">
-            Lihat Thread Detail
+            Jelajahi Thread
           </Link>
           <Link
             to="/login"

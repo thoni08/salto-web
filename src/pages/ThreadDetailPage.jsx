@@ -178,20 +178,18 @@ export default function ThreadDetailPage() {
           </Link>
 
           <nav className="hidden items-center gap-5 text-[14px] leading-4.5 md:flex">
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
+            <Link
+              to="/"
               className={`${linkFx} text-(--color-dark) hover:text-(--color-like-blue)`}>
               Beranda
-            </a>
+            </Link>
 
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
+            <Link
+              to="/thread"
               className={`${linkFx} flex flex-col items-center text-(--color-dark) font-bold`}>
               Diskusi
               <span className="mt-0.75 h-0.5 w-13.25 rounded-full bg-(--color-like-blue)" />
-            </a>
+            </Link>
 
             <a
               href="#"

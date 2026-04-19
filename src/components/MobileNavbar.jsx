@@ -12,7 +12,7 @@ export function MobileNavbar() {
 
   const navItems = [
     { path: "/", icon: Home, label: "Beranda" },
-    { path: "/thread/25-885", icon: MessageSquare, label: "Diskusi" },
+    { path: "/thread", icon: MessageSquare, label: "Diskusi" },
     { path: "#", icon: Radio, label: "Live" },
   ];
 
