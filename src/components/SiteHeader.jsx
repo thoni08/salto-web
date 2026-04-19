@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const defaultNavItems = [
   { label: "Beranda", href: "/" },
-  { label: "Diskusi", href: "/thread/25-885" },
+  { label: "Diskusi", href: "/thread" },
   { label: "Live", href: "/live" },
 ];
 

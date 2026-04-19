@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryRouter, Navigate, Route, Routes } from "react-router-dom";
 import App from "../App";
 import LoginPage from "../pages/LoginPage";
+import ThreadPage from "../pages/ThreadPage";
 import ThreadDetailPage from "../pages/ThreadDetailPage";
 
 function renderRoutes(initialEntries = ["/login"]) {
@@ -11,6 +12,7 @@ function renderRoutes(initialEntries = ["/login"]) {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<App />} />
+        <Route path="/thread" element={<ThreadPage />} />
         <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
         <Route path="/thread-detail" element={<ThreadDetailPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
@@ -27,7 +29,7 @@ describe("app route flow", () => {
       target: { value: "user@example.com" },
     });
     fireEvent.change(
-      screen.getByLabelText(/^Password\s*\*/i, { selector: "input" }),
+      screen.getByLabelText(/^Password(?:\s*\*)?$/i, { selector: "input" }),
       {
         target: { value: "password123" },
       },
@@ -36,10 +38,22 @@ describe("app route flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Masuk" }));
 
     expect(
-      await screen.findByRole("heading", { name: /Home Page/i }),
+      await screen.findByRole("heading", {
+        name: /Tanya Jawab Mahasiwa & Alumni/i,
+      }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("link", { name: /Lihat Thread Detail/i }));
+    fireEvent.click(screen.getByRole("link", { name: /Jelajahi Forum/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: /Diskusi Terbaru/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("link", {
+        name: /Bagaimana cara persiapan technical interview/i,
+      }),
+    );
 
     expect(
       await screen.findByRole("heading", {
