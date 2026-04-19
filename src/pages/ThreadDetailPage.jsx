@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import {
@@ -25,16 +25,9 @@ import {
   answerComposerMinCharacters,
   answerComposerRestrictionMessage,
   answerComposerTip,
-  answers,
   currentViewer,
-  contributors,
-  relatedThreads,
+  getThreadDetailData,
   socialLinks,
-  statRows,
-  threadBreadcrumbs,
-  threadCategoryChips,
-  threadHeader,
-  threadIntroParagraphs,
 } from "./thread-detail/data";
 import { submitThreadAnswer } from "./thread-detail/threadDetailApi";
 import {
@@ -101,11 +94,32 @@ function sortAnswerList(answerList, sortMode) {
 }
 
 export default function ThreadDetailPage() {
-  const [sortMode, setSortMode] = useState("popular");
+  const { threadId } = useParams();
+  const [sortModeByThread, setSortModeByThread] = useState({});
   const [viewerIsAlumni, setViewerIsAlumni] = useState(currentViewer.isAlumni);
-  const [submittedAnswers, setSubmittedAnswers] = useState([]);
+  const [submittedAnswersByThread, setSubmittedAnswersByThread] = useState({});
   const scrollDirection = useScrollDirection();
   const isAuthenticated = !!localStorage.getItem("authToken");
+
+  const threadData = useMemo(() => getThreadDetailData(threadId), [threadId]);
+
+  const {
+    threadHeader,
+    threadBreadcrumbs,
+    threadCategoryChips,
+    threadIntroParagraphs,
+    answers: initialAnswers,
+    contributors,
+    statRows,
+    relatedThreads,
+  } = threadData;
+
+  const currentThreadId = threadHeader.id;
+  const sortMode = sortModeByThread[currentThreadId] || "popular";
+  const submittedAnswers = useMemo(
+    () => submittedAnswersByThread[currentThreadId] || [],
+    [currentThreadId, submittedAnswersByThread],
+  );
 
   const viewerProfile = useMemo(
     () => ({
@@ -121,8 +135,8 @@ export default function ThreadDetailPage() {
   );
 
   const visibleAnswers = useMemo(
-    () => sortAnswerList([...answers, ...submittedAnswers], sortMode),
-    [sortMode, submittedAnswers],
+    () => sortAnswerList([...initialAnswers, ...submittedAnswers], sortMode),
+    [initialAnswers, sortMode, submittedAnswers],
   );
 
   const answerCountLabel = `${visibleAnswers.length} Jawaban`;
@@ -152,8 +166,17 @@ export default function ThreadDetailPage() {
       };
     }
 
-    setSubmittedAnswers((previous) => [...previous, submitResult.answer]);
-    setSortMode("latest");
+    setSubmittedAnswersByThread((previous) => {
+      const currentItems = previous[currentThreadId] || [];
+      return {
+        ...previous,
+        [currentThreadId]: [...currentItems, submitResult.answer],
+      };
+    });
+    setSortModeByThread((previous) => ({
+      ...previous,
+      [currentThreadId]: "latest",
+    }));
 
     return {
       ok: true,
@@ -164,7 +187,7 @@ export default function ThreadDetailPage() {
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
-        activeHref="/thread/25-885"
+        activeHref="/thread"
         className={`transition-all duration-300 ${
           scrollDirection === "down" ? "-top-25" : "top-0"
         }`}
@@ -210,12 +233,12 @@ export default function ThreadDetailPage() {
             <article className="rounded-2xl border border-(--color-like-blue) bg-white px-8 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f3f4f6] pb-4">
                 <div className="flex flex-wrap items-center gap-2 text-[14px] leading-5 text-[#6b7280]">
-                  <button
-                    type="button"
+                  <Link
+                    to="/thread"
                     className={`${buttonFx} inline-flex items-center gap-2 rounded-full text-[14px] font-medium text-[#6b7280] hover:text-(--color-dark)`}>
                     <Icon icon={ArrowLeft} className="h-4 w-4" />
                     Kembali ke Diskusi
-                  </button>
+                  </Link>
                 </div>
 
                 <button
@@ -295,7 +318,12 @@ export default function ThreadDetailPage() {
               <div className="inline-flex items-center rounded-full border border-(--color-gray) bg-white p-1">
                 <button
                   type="button"
-                  onClick={() => setSortMode("popular")}
+                  onClick={() =>
+                    setSortModeByThread((previous) => ({
+                      ...previous,
+                      [currentThreadId]: "popular",
+                    }))
+                  }
                   className={`${buttonFx} rounded-full px-4 py-1 text-[12px] leading-4 font-medium ${
                     sortMode === "popular"
                       ? "bg-(--color-dark) text-white"
@@ -305,7 +333,12 @@ export default function ThreadDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSortMode("latest")}
+                  onClick={() =>
+                    setSortModeByThread((previous) => ({
+                      ...previous,
+                      [currentThreadId]: "latest",
+                    }))
+                  }
                   className={`${buttonFx} rounded-full px-4 py-1 text-[12px] leading-4 font-medium ${
                     sortMode === "latest"
                       ? "bg-(--color-dark) text-white"

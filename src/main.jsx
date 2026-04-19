@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import LiveDiskusiPage from "./pages/LiveDiskusiPage.jsx";
+import ThreadPage from "./pages/ThreadPage.jsx";
 import ThreadDetailPage from "./pages/ThreadDetailPage.jsx";
 import { Layout } from "./components/Layout.jsx";
 import { AppErrorBoundary } from "./components/AppErrorBoundary.jsx";
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/live-diskusi" element={<LiveDiskusiPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<App />} />
+            <Route path="/thread" element={<ThreadPage />} />
             <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
             <Route path="/thread-detail" element={<ThreadDetailPage />} />
           </Route>
