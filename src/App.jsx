@@ -180,7 +180,7 @@ function App() {
                   Mulai Bertanya <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
-                  to="/thread/25-885"
+                  to="/thread"
                   className="inline-flex h-11 items-center rounded-full border border-white/45 bg-white/16 px-7 text-[14px] font-semibold text-white transition hover:bg-white/24">
                   Jelajahi Forum
                 </Link>
@@ -269,7 +269,7 @@ function App() {
                 </h2>
               </div>
               <Link
-                to="/thread/25-885"
+                to="/thread"
                 className="inline-flex items-center gap-1 text-[14px] font-medium text-(--color-dark) hover:opacity-80">
                 Lihat Semua <ArrowRight className="h-4 w-4" />
               </Link>
