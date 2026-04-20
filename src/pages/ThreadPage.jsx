@@ -12,7 +12,8 @@ import {
   Search,
   ThumbsUp,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
 import {
@@ -22,6 +23,13 @@ import {
   topAlumni,
   upcomingLives,
 } from "./thread-detail/data";
+
+const THREADS_PER_PAGE = 3;
+
+function parseParticipants(participantsLabel) {
+  const match = String(participantsLabel).match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
 
 function getInitials(name) {
   return name
@@ -66,7 +74,15 @@ function threadBadgeMeta(type) {
   };
 }
 
-function UpcomingLiveCard({ creator, title, schedule, participants, cta }) {
+function UpcomingLiveCard({
+  creator,
+  title,
+  schedule,
+  participants,
+  cta,
+  isRegistered,
+  onToggleRegister,
+}) {
   return (
     <article className="h-35 overflow-hidden rounded-[18px] border border-[#ced0f9]/50 bg-white px-4 pt-4.5 pb-4.5 shadow-[0_20px_36px_-30px_rgba(37,52,63,0.46)]">
       <div className="flex h-26 flex-col justify-between">
@@ -100,8 +116,13 @@ function UpcomingLiveCard({ creator, title, schedule, participants, cta }) {
 
           <button
             type="button"
-            className="h-7 rounded-full bg-(--color-dark) px-3 text-[12px] leading-4 font-semibold text-white transition hover:opacity-90">
-            {cta}
+            onClick={onToggleRegister}
+            className={`h-7 rounded-full px-3 text-[12px] leading-4 font-semibold transition ${
+              isRegistered
+                ? "border border-[#25343f] bg-white text-[#25343f] hover:bg-[#f8fafc]"
+                : "bg-(--color-dark) text-white hover:opacity-90"
+            }`}>
+            {isRegistered ? "Batal" : cta}
           </button>
         </div>
       </div>
@@ -110,6 +131,102 @@ function UpcomingLiveCard({ creator, title, schedule, participants, cta }) {
 }
 
 export default function ThreadPage() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState(filters[0]);
+  const [visibleCount, setVisibleCount] = useState(THREADS_PER_PAGE);
+  const [likedByThread, setLikedByThread] = useState({});
+  const [liveSessions, setLiveSessions] = useState(() =>
+    upcomingLives.map((item, index) => ({
+      ...item,
+      id: `live-${index + 1}`,
+      participantsCount: parseParticipants(item.participants),
+      isRegistered: false,
+    })),
+  );
+
+  const filteredThreads = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return threadItems.filter((thread) => {
+      const passFilter =
+        activeFilter === "Semua"
+          ? true
+          : activeFilter === "Mahasiswa"
+            ? thread.roleLabel === "Mahasiswa"
+            : activeFilter === "Alumni"
+              ? thread.roleLabel === "Alumni"
+              : thread.badges.some((badge) => badge.type === "answered");
+
+      if (!passFilter) return false;
+      if (!normalizedQuery) return true;
+
+      const searchable = [
+        thread.title,
+        thread.excerpt,
+        thread.author,
+        thread.authorMeta,
+        ...thread.tags.map((tag) => tag.label),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(normalizedQuery);
+    });
+  }, [activeFilter, searchQuery]);
+
+  const visibleThreads = useMemo(
+    () => filteredThreads.slice(0, visibleCount),
+    [filteredThreads, visibleCount],
+  );
+
+  const canLoadMore = visibleThreads.length < filteredThreads.length;
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    setVisibleCount(THREADS_PER_PAGE);
+  };
+
+  const handleFilterClick = (filter) => {
+    setActiveFilter(filter);
+    setVisibleCount(THREADS_PER_PAGE);
+  };
+
+  const handleToggleLike = (threadId) => {
+    setLikedByThread((previous) => ({
+      ...previous,
+      [threadId]: !previous[threadId],
+    }));
+  };
+
+  const handleToggleRegistration = (sessionId) => {
+    setLiveSessions((previous) =>
+      previous.map((session) => {
+        if (session.id !== sessionId) return session;
+        const isRegistered = !session.isRegistered;
+        const participantsCount = isRegistered
+          ? session.participantsCount + 1
+          : Math.max(0, session.participantsCount - 1);
+
+        return {
+          ...session,
+          isRegistered,
+          participantsCount,
+        };
+      }),
+    );
+  };
+
+  const openThreadDetail = (threadId) => {
+    navigate(`/thread/${threadId}`);
+  };
+
+  const handleThreadCardKeyDown = (event, threadId) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openThreadDetail(threadId);
+  };
+
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
@@ -132,6 +249,8 @@ export default function ThreadPage() {
                 <Search className="h-5 w-5" />
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
                   placeholder="Cari topik, kata kunci, atau alumni..."
                   className="ml-3 w-full bg-transparent text-[14px] text-(--color-dark) outline-none placeholder:text-(--color-secondary)"
                 />
@@ -139,12 +258,13 @@ export default function ThreadPage() {
             </header>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              {filters.map((filter, index) => (
+              {filters.map((filter) => (
                 <button
                   key={filter}
                   type="button"
+                  onClick={() => handleFilterClick(filter)}
                   className={`inline-flex h-8 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
-                    index === 0
+                    activeFilter === filter
                       ? "bg-[#25343f] text-white"
                       : "bg-[#f1f5f9] text-[#25343f] hover:bg-[#e2e8f0]"
                   }`}>
@@ -154,13 +274,20 @@ export default function ThreadPage() {
             </div>
 
             <div className="mt-6 flex h-191.75 flex-col gap-4">
-              {threadItems.map((thread, index) => (
-                <Link
-                  key={thread.id}
-                  to={`/thread/${thread.id}`}
-                  className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)">
+              {visibleThreads.map((thread, index) => {
+                const isLiked = Boolean(likedByThread[thread.id]);
+                const likeCount = thread.stats.likes + (isLiked ? 1 : 0);
+
+                return (
                   <article
-                    className={`cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] ${
+                    key={thread.id}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => openThreadDetail(thread.id)}
+                    onKeyDown={(event) =>
+                      handleThreadCardKeyDown(event, thread.id)
+                    }
+                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue) ${
                       index === 1 ? "h-57" : "h-56.25"
                     }`}>
                     <div className="flex items-center gap-2.5">
@@ -228,20 +355,51 @@ export default function ThreadPage() {
                               <MessageCircle className="h-4 w-4" />
                               {thread.stats.comments}
                             </span>
-                            <span className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleToggleLike(thread.id);
+                              }}
+                              aria-label={
+                                isLiked
+                                  ? `Batalkan suka untuk ${thread.title}`
+                                  : `Suka thread ${thread.title}`
+                              }
+                              aria-pressed={isLiked}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition ${
+                                isLiked
+                                  ? "bg-[#eef2ff] text-(--color-like-blue)"
+                                  : "text-(--color-secondary) hover:bg-[#f8fafc]"
+                              }`}>
                               <ThumbsUp className="h-4 w-4" />
-                              {thread.stats.likes}
-                            </span>
+                              {likeCount}
+                            </button>
                           </div>
                         </div>
                       </div>
                     </div>
                   </article>
-                </Link>
-              ))}
+                );
+              })}
+
+              {visibleThreads.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-6 py-8 text-center text-[14px] text-(--color-secondary)">
+                  Tidak ada thread yang cocok dengan filter atau pencarian ini.
+                </div>
+              ) : null}
 
               <button
                 type="button"
+                disabled={!canLoadMore}
+                onClick={() =>
+                  setVisibleCount((previous) =>
+                    Math.min(
+                      previous + THREADS_PER_PAGE,
+                      filteredThreads.length,
+                    ),
+                  )
+                }
                 className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
                 Muat Lebih Banyak <ArrowRight className="h-3 w-3" />
               </button>
@@ -306,14 +464,16 @@ export default function ThreadPage() {
               </header>
 
               <div className="mt-4 h-74 space-y-4 overflow-hidden">
-                {upcomingLives.map((item) => (
+                {liveSessions.map((item) => (
                   <UpcomingLiveCard
-                    key={item.title}
+                    key={item.id}
                     creator={item.creator}
                     title={item.title}
                     schedule={item.schedule}
-                    participants={item.participants}
+                    participants={`${item.participantsCount} peserta`}
                     cta={item.cta}
+                    isRegistered={item.isRegistered}
+                    onToggleRegister={() => handleToggleRegistration(item.id)}
                   />
                 ))}
               </div>
