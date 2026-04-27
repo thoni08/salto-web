@@ -465,6 +465,20 @@ export const threadListItems = THREAD_LIBRARY.map((entry) => ({
   ...entry.list,
 }));
 
+export const trendingThreads = [...threadListItems]
+  .sort((left, right) => right.stats.likes - left.stats.likes)
+  .slice(0, 3)
+  .map((thread) => ({
+    id: thread.id,
+    title: thread.title,
+    tags: thread.tags.map((tag) => tag.label),
+    author: thread.author,
+    role: thread.authorMeta,
+    reactions: thread.stats.likes,
+    views: `${thread.stats.comments} komentar`,
+    age: thread.postedAgo,
+  }));
+
 export function getThreadDetailData(threadId) {
   const selectedEntry =
     THREAD_LIBRARY.find((entry) => entry.id === threadId) ||

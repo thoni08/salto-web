@@ -17,6 +17,14 @@ import { Link, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import {
+  AnswerCard,
+  AnswerComposerCard,
+  Avatar,
+  ContributorCard,
+  FooterSection,
+  Icon,
+} from "./thread-detail/components";
+import {
   buttonFx,
   linkFx,
   preventPlaceholderClick,
@@ -30,14 +38,6 @@ import {
   socialLinks,
 } from "./thread-detail/data";
 import { submitThreadAnswer } from "./thread-detail/threadDetailApi";
-import {
-  AnswerCard,
-  AnswerComposerCard,
-  Avatar,
-  ContributorCard,
-  FooterSection,
-  Icon,
-} from "./thread-detail/components";
 
 const MONTH_INDEX_BY_NAME = {
   Jan: 0,
@@ -52,6 +52,11 @@ const MONTH_INDEX_BY_NAME = {
   Oct: 9,
   Nov: 10,
   Dec: 11,
+};
+
+const BREADCRUMB_HREF_BY_LABEL = {
+  Beranda: "/",
+  Diskusi: "/thread",
 };
 
 function parseThreadTimestamp(createdAt) {
@@ -213,14 +218,23 @@ export default function ThreadDetailPage() {
                       ? "min-w-0 shrink"
                       : "shrink-0"
                   }`}>
-                  <span
-                    className={`truncate ${
-                      index === threadBreadcrumbs.length - 1
-                        ? "text-(--color-dark)"
-                        : ""
-                    }`}>
-                    {item}
-                  </span>
+                  {index < threadBreadcrumbs.length - 1 &&
+                  BREADCRUMB_HREF_BY_LABEL[item] ? (
+                    <Link
+                      to={BREADCRUMB_HREF_BY_LABEL[item]}
+                      className={`${linkFx} truncate hover:text-(--color-dark)`}>
+                      {item}
+                    </Link>
+                  ) : (
+                    <span
+                      className={`truncate ${
+                        index === threadBreadcrumbs.length - 1
+                          ? "text-(--color-dark)"
+                          : ""
+                      }`}>
+                      {item}
+                    </span>
+                  )}
                   {index < threadBreadcrumbs.length - 1 ? (
                     <span className="shrink-0 text-[10px] md:text-[12px]">
                       /

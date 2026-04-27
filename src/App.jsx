@@ -15,7 +15,7 @@ import {
 import { Link } from "react-router-dom";
 import { SiteHeader } from "./components/SiteHeader.jsx";
 import { FooterSection } from "./pages/thread-detail/components/FooterSection.jsx";
-import { socialLinks } from "./pages/thread-detail/data";
+import { socialLinks, trendingThreads } from "./pages/thread-detail/data";
 
 const heroImage =
   "https://images.unsplash.com/photo-1603202662747-00e33e7d1468";
@@ -48,45 +48,6 @@ const platformStats = [
     description: "dari 12.000+ Ulasan",
     icon: Star,
     tone: "text-[#fb7185] bg-[#ffe7ee] border-[#ffd2dd]",
-  },
-];
-
-const trendingThreads = [
-  {
-    id: "t-1",
-    title:
-      "Bagaimana cara mendapatkan internship di perusahaan Fortune 500 saat masih semester 5?",
-    tags: ["Karier", "Magang", "Business", "Technology"],
-    author: "Ridy Mahendra",
-    role: "Alumni Google Indonesia",
-    reactions: 56,
-    views: "3.2k",
-    age: "3 jam lalu",
-    accent: "from-[#4f67ff] to-[#25343f]",
-  },
-  {
-    id: "t-2",
-    title:
-      "Perbedaan culture kerja startup vs. korporat: mana yang lebih cocok untuk fresh graduate?",
-    tags: ["Career", "Business", "IT"],
-    author: "Dr. Sari Wulandari",
-    role: "Senior PM Tech Lead",
-    reactions: 62,
-    views: "5.1k",
-    age: "7 jam lalu",
-    accent: "from-[#34d399] to-[#0f766e]",
-  },
-  {
-    id: "t-3",
-    title:
-      "Tips membangun portofolio yang dilirik HR meski belum punya pengalaman kerja",
-    tags: ["Portfolio", "Career", "Design"],
-    author: "Dewi Pratama",
-    role: "Product Ops at Akulaku",
-    reactions: 46,
-    views: "3.4k",
-    age: "12 jam lalu",
-    accent: "from-[#fb923c] to-[#ea580c]",
   },
 ];
 
@@ -274,45 +235,48 @@ function App() {
 
             <div className="mt-5 grid gap-6 lg:grid-cols-3">
               {trendingThreads.map((thread) => (
-                <article
+                <Link
                   key={thread.id}
-                  className="rounded-2xl border border-white/85 bg-white p-5 shadow-[0_20px_36px_-28px_rgba(37,52,63,.72)]">
-                  <div className="mb-4 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ef4444]">
-                    <Flame className="h-3.5 w-3.5" /> Trending
-                  </div>
-
-                  <h3 className="min-h-18 text-[16px] leading-6 font-semibold text-(--color-dark)">
-                    {thread.title}
-                  </h3>
-
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {thread.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] text-(--color-secondary)">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 border-t border-[#eef1f6] pt-4 text-[12px]">
-                    <p className="font-semibold text-(--color-dark)">
-                      {thread.author}
-                    </p>
-                    <p className="text-(--color-secondary)">{thread.role}</p>
-                    <div className="mt-3 flex items-center gap-4 text-(--color-secondary)">
-                      <span className="inline-flex items-center gap-1">
-                        <Heart className="h-4 w-4" /> {thread.reactions}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <MessageCircle className="h-4 w-4" /> {thread.views}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock3 className="h-4 w-4" /> {thread.age}
-                      </span>
+                  to={`/thread/${thread.id}`}
+                  className="group block rounded-2xl border border-white/85 bg-white p-5 shadow-[0_20px_36px_-28px_rgba(37,52,63,.72)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,.82)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)">
+                  <article>
+                    <div className="mb-4 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ef4444]">
+                      <Flame className="h-3.5 w-3.5" /> Trending
                     </div>
-                  </div>
-                </article>
+
+                    <h3 className="min-h-18 text-[16px] leading-6 font-semibold text-(--color-dark) group-hover:text-(--color-like-blue)">
+                      {thread.title}
+                    </h3>
+
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {thread.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] text-(--color-secondary)">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 border-t border-[#eef1f6] pt-4 text-[12px]">
+                      <p className="font-semibold text-(--color-dark)">
+                        {thread.author}
+                      </p>
+                      <p className="text-(--color-secondary)">{thread.role}</p>
+                      <div className="mt-3 flex items-center gap-4 text-(--color-secondary)">
+                        <span className="inline-flex items-center gap-1">
+                          <Heart className="h-4 w-4" /> {thread.reactions}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <MessageCircle className="h-4 w-4" /> {thread.views}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Clock3 className="h-4 w-4" /> {thread.age}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                </Link>
               ))}
             </div>
           </div>
