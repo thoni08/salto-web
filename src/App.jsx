@@ -1,19 +1,16 @@
 import {
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Circle,
-  ArrowRight,
-  Bookmark,
-  Flame,
   Clock3,
+  Flame,
   Heart,
   Lightbulb,
   MessageCircle,
   Play,
   Star,
-  Sparkles,
   UserCheck,
-  Users,
+  Users
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SiteHeader } from "./components/SiteHeader.jsx";
@@ -21,7 +18,7 @@ import { FooterSection } from "./pages/thread-detail/components/FooterSection.js
 import { socialLinks } from "./pages/thread-detail/data";
 
 const heroImage =
-  "https://www.figma.com/api/mcp/asset/3310478f-2dd4-41c3-8752-373ed3d6ee6f";
+  "https://images.unsplash.com/photo-1603202662747-00e33e7d1468";
 
 const platformStats = [
   {
