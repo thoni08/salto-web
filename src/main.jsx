@@ -6,6 +6,7 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary.jsx";
 import { Layout } from "./components/Layout.jsx";
 import { ScrollToTop } from "./components/ScrollToTop.jsx";
 import "./index.css";
+import CreateThreadPage from "./pages/CreateThreadPage.jsx";
 import LiveDiskusiPage from "./pages/LiveDiskusiPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
@@ -25,6 +26,7 @@ createRoot(document.getElementById("root")).render(
           <Route element={<Layout />}>
             <Route path="/" element={<App />} />
             <Route path="/thread" element={<ThreadPage />} />
+            <Route path="/thread/create" element={<CreateThreadPage />} />
             <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
             <Route path="/thread-detail" element={<ThreadDetailPage />} />
           </Route>

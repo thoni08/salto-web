@@ -1,24 +1,24 @@
 import {
-  ArrowRight,
-  Pin,
-  Flame,
+  ChevronDown,
   Clock3,
-  Video,
-  MessageCircle,
-  Users,
-  Radio,
+  Flame,
   Medal,
+  MessageCircle,
   PenSquare,
+  Pin,
+  Radio,
   Search,
   ThumbsUp,
+  Users,
+  Video,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
 import {
-  socialLinks,
   threadFilters as filters,
+  socialLinks,
   threadListItems as threadItems,
   topAlumni,
   upcomingLives,
@@ -401,18 +401,18 @@ export default function ThreadPage() {
                   )
                 }
                 className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
-                Muat Lebih Banyak <ArrowRight className="h-3 w-3" />
+                Muat Lebih Banyak <ChevronDown className="h-3 w-3" />
               </button>
             </div>
           </section>
 
           <aside className="h-190 space-y-6">
-            <button
-              type="button"
+            <Link
+              to="/thread/create"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25343f] px-4 text-[16px] leading-6 font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition hover:bg-[#1f2c35]">
               <PenSquare className="h-5 w-5" />
               Buat Thread Baru
-            </button>
+            </Link>
 
             <section className="h-70.5 rounded-2xl border border-(--color-light-blue) bg-white p-5 shadow-[0_16px_30px_-26px_rgba(37,52,63,0.5)]">
               <header className="flex items-center gap-2">

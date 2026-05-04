@@ -465,6 +465,18 @@ export const threadListItems = THREAD_LIBRARY.map((entry) => ({
   ...entry.list,
 }));
 
+export const threadCreateAudienceOptions = threadFilters.filter(
+  (filter) => filter !== "Semua" && filter !== "Badge Khusus",
+);
+
+export const threadCreateCategoryOptions = [
+  ...new Set(
+    threadListItems.flatMap((thread) =>
+      thread.tags.map((tag) => tag.label.trim()),
+    ),
+  ),
+];
+
 export const trendingThreads = [...threadListItems]
   .sort((left, right) => right.stats.likes - left.stats.likes)
   .slice(0, 3)
