@@ -12,10 +12,12 @@ import {
   Share2,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
+import { getAuthToken } from "../services/authStorage.js";
+import { fetchThreadById, mapApiThreadDetail } from "../services/saltoApi.js";
 import {
   AnswerCard,
   AnswerComposerCard,
@@ -103,10 +105,56 @@ export default function ThreadDetailPage() {
   const [sortModeByThread, setSortModeByThread] = useState({});
   const [viewerIsAlumni, setViewerIsAlumni] = useState(currentViewer.isAlumni);
   const [submittedAnswersByThread, setSubmittedAnswersByThread] = useState({});
+  const [apiThreadSnapshot, setApiThreadSnapshot] = useState(null);
+  const [isThreadLoading, setIsThreadLoading] = useState(true);
+  const [threadLoadError, setThreadLoadError] = useState("");
   const scrollDirection = useScrollDirection();
-  const isAuthenticated = !!localStorage.getItem("authToken");
+  const isAuthenticated = Boolean(getAuthToken());
 
-  const threadData = useMemo(() => getThreadDetailData(threadId), [threadId]);
+  const fallbackThreadData = useMemo(
+    () => getThreadDetailData(threadId),
+    [threadId],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadThreadDetail() {
+      setIsThreadLoading(true);
+      setThreadLoadError("");
+
+      try {
+        const response = await fetchThreadById(threadId);
+        if (active) {
+          setApiThreadSnapshot(response?.data || null);
+        }
+      } catch (error) {
+        if (active) {
+          setApiThreadSnapshot(null);
+          setThreadLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gagal memuat detail thread dari API.",
+          );
+        }
+      } finally {
+        if (active) {
+          setIsThreadLoading(false);
+        }
+      }
+    }
+
+    loadThreadDetail();
+
+    return () => {
+      active = false;
+    };
+  }, [threadId]);
+
+  const threadData = useMemo(
+    () => mapApiThreadDetail(apiThreadSnapshot, fallbackThreadData),
+    [apiThreadSnapshot, fallbackThreadData],
+  );
 
   const {
     threadHeader,
@@ -207,6 +255,18 @@ export default function ThreadDetailPage() {
       />
 
       <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-3.5 lg:px-0">
+        {isThreadLoading ? (
+          <div className="mb-3 rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-5 py-3 text-[13px] text-(--color-secondary)">
+            Memuat detail thread dari API...
+          </div>
+        ) : null}
+
+        {!isThreadLoading && threadLoadError ? (
+          <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-[13px] text-amber-700">
+            {threadLoadError}
+          </div>
+        ) : null}
+
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,912px)_320px]">
           <section className="space-y-3 min-w-0">
             <nav className="flex flex-nowrap items-center gap-1.5 overflow-hidden px-1 text-[13px] md:text-[14px] leading-5 text-(--color-secondary)">

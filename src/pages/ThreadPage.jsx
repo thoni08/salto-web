@@ -1,27 +1,31 @@
 import {
-  ChevronDown,
-  Clock3,
-  Flame,
-  Medal,
-  MessageCircle,
-  PenSquare,
-  Pin,
-  Radio,
-  Search,
-  ThumbsUp,
-  Users,
-  Video,
+    ChevronDown,
+    Clock3,
+    Flame,
+    Medal,
+    MessageCircle,
+    PenSquare,
+    Pin,
+    Radio,
+    Search,
+    ThumbsUp,
+    Users,
+    Video,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
-import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
+import { fetchThreads, mapApiThreadListItem } from "../services/saltoApi.js";
 import {
-  threadFilters as filters,
-  socialLinks,
-  threadListItems as threadItems,
-  topAlumni,
-  upcomingLives,
+  FooterSection,
+  ThreadCardSkeleton,
+} from "./thread-detail/components";
+import {
+    threadListItems as fallbackThreadItems,
+    threadFilters as filters,
+    socialLinks,
+    topAlumni,
+    upcomingLives,
 } from "./thread-detail/data";
 
 const THREADS_PER_PAGE = 3;
@@ -135,7 +139,10 @@ export default function ThreadPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState(filters[0]);
   const [visibleCount, setVisibleCount] = useState(THREADS_PER_PAGE);
+  const [threadItems, setThreadItems] = useState(fallbackThreadItems);
   const [likedByThread, setLikedByThread] = useState({});
+  const [isThreadLoading, setIsThreadLoading] = useState(true);
+  const [threadLoadError, setThreadLoadError] = useState("");
   const [liveSessions, setLiveSessions] = useState(() =>
     upcomingLives.map((item, index) => ({
       ...item,
@@ -144,6 +151,49 @@ export default function ThreadPage() {
       isRegistered: false,
     })),
   );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadThreads() {
+      setIsThreadLoading(true);
+      setThreadLoadError("");
+
+      try {
+        const response = await fetchThreads({ page: 1, limit: 100 });
+        if (active) {
+          const mappedThreads = Array.isArray(response?.data)
+            ? response.data.map((thread, index) =>
+                mapApiThreadListItem(thread, index),
+              )
+            : [];
+
+          setThreadItems(
+            mappedThreads.length > 0 ? mappedThreads : fallbackThreadItems,
+          );
+        }
+      } catch (error) {
+        if (active) {
+          setThreadItems(fallbackThreadItems);
+          setThreadLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gagal memuat thread dari API.",
+          );
+        }
+      } finally {
+        if (active) {
+          setIsThreadLoading(false);
+        }
+      }
+    }
+
+    loadThreads();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredThreads = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -173,7 +223,7 @@ export default function ThreadPage() {
 
       return searchable.includes(normalizedQuery);
     });
-  }, [activeFilter, searchQuery]);
+  }, [activeFilter, searchQuery, threadItems]);
 
   const visibleThreads = useMemo(
     () => filteredThreads.slice(0, visibleCount),
@@ -274,6 +324,16 @@ export default function ThreadPage() {
             </div>
 
             <div className="mt-6 flex h-191.75 flex-col gap-4">
+              {isThreadLoading
+                ? [1, 2, 3].map((key) => <ThreadCardSkeleton key={key} />)
+                : null}
+
+              {!isThreadLoading && threadLoadError ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-[13px] text-amber-700">
+                  {threadLoadError}
+                </div>
+              ) : null}
+
               {visibleThreads.map((thread, index) => {
                 const isLiked = Boolean(likedByThread[thread.id]);
                 const likeCount = thread.stats.likes + (isLiked ? 1 : 0);
