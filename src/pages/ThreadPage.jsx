@@ -29,7 +29,7 @@ import {
     upcomingLives,
 } from "./thread-detail/data";
 
-const THREADS_PER_PAGE = 3;
+const THREADS_PER_PAGE = 5;
 
 function parseParticipants(participantsLabel) {
   const match = String(participantsLabel).match(/\d+/);
@@ -162,7 +162,20 @@ export default function ThreadPage() {
       setThreadLoadError("");
 
       try {
-        const response = await fetchThreads({ page: 1, limit: 100 });
+        let apiAuthorType = "";
+        if (activeFilter === "Mahasiswa") {
+          apiAuthorType = "STUDENT";
+        } else if (activeFilter === "Alumni") {
+          apiAuthorType = "ALUMNI";
+        }
+        // "Terjawab" is handled client-side in the filteredThreads useMemo.
+
+        const response = await fetchThreads({
+          page: 1,
+          limit: 100,
+          searchTerm: searchQuery,
+          authorType: apiAuthorType,
+        });
         if (active) {
           const mappedThreads = Array.isArray(response?.data)
             ? response.data.map((thread, index) =>
@@ -171,12 +184,12 @@ export default function ThreadPage() {
             : [];
 
           setThreadItems(
-            mappedThreads.length > 0 ? mappedThreads : fallbackThreadItems,
+            mappedThreads.length > 0 ? mappedThreads : [],
           );
         }
       } catch (error) {
         if (active) {
-          setThreadItems(fallbackThreadItems);
+          setThreadItems([]); // Set to empty array on error
           setThreadLoadError(
             error instanceof Error
               ? error.message
@@ -195,37 +208,19 @@ export default function ThreadPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [searchQuery, activeFilter]);
 
   const filteredThreads = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-
-    return threadItems.filter((thread) => {
-      const passFilter =
-        activeFilter === "Semua"
-          ? true
-          : activeFilter === "Mahasiswa"
-            ? thread.roleLabel === "Mahasiswa"
-            : activeFilter === "Alumni"
-              ? thread.roleLabel === "Alumni"
-              : thread.badges.some((badge) => badge.type === "answered");
-
-      if (!passFilter) return false;
-      if (!normalizedQuery) return true;
-
-      const searchable = [
-        thread.title,
-        thread.excerpt,
-        thread.author,
-        thread.authorMeta,
-        ...thread.tags.map((tag) => tag.label),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(normalizedQuery);
-    });
-  }, [activeFilter, searchQuery, threadItems]);
+    // If activeFilter is "Terjawab", we apply the client-side filter.
+    // Otherwise, the API has already filtered by searchTerm and authorType,
+    // so we just return the threadItems.
+    if (activeFilter === "Terjawab") {
+      return threadItems.filter((thread) =>
+        thread.badges.some((badge) => badge.type === "answered")
+      );
+    }
+    return threadItems;
+  }, [activeFilter, threadItems]);
 
   const visibleThreads = useMemo(
     () => filteredThreads.slice(0, visibleCount),

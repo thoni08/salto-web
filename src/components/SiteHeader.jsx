@@ -1,7 +1,7 @@
 import { LogOut } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { clearAuthSession } from "../services/authStorage.js";
+import { clearAuthSession, getAuthUser } from "../services/authStorage.js";
 
 const defaultNavItems = [
   { label: "Beranda", href: "/" },
@@ -18,15 +18,52 @@ export function SiteHeader({
 }) {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [sessionUser, setSessionUser] = useState(() => user ?? getAuthUser());
+
+  useEffect(() => {
+    setSessionUser(user ?? getAuthUser());
+  }, [user]);
+
+  useEffect(() => {
+    const syncSessionUser = () => {
+      setSessionUser(getAuthUser());
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncSessionUser();
+      }
+    };
+
+    window.addEventListener("storage", syncSessionUser);
+    window.addEventListener("focus", syncSessionUser);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("storage", syncSessionUser);
+      window.removeEventListener("focus", syncSessionUser);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   const handleLogout = () => {
     clearAuthSession();
+    setSessionUser(null);
     setShowProfileMenu(false);
     navigate("/");
   };
 
-  const userInitials = user
-    ? (user.fullName || user.userName || "")
+  const activeUser = sessionUser;
+
+  const displayName =
+    activeUser?.fullName ||
+    activeUser?.name ||
+    activeUser?.userName ||
+    activeUser?.username ||
+    "Profil";
+
+  const userInitials = activeUser
+    ? displayName
         .split(/\s+/)
         .slice(0, 2)
         .map((word) => word[0])
@@ -77,7 +114,7 @@ export function SiteHeader({
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          {user ? (
+          {activeUser ? (
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -86,7 +123,7 @@ export function SiteHeader({
                   {userInitials}
                 </div>
                 <span className="max-w-[120px] truncate text-(--color-dark)">
-                  {user.fullName || user.userName || "Profil"}
+                  {displayName}
                 </span>
               </button>
 
@@ -95,10 +132,10 @@ export function SiteHeader({
                   <div className="border-b border-(--color-gray) px-4 py-3">
                     <p className="text-[12px] text-(--color-secondary)">Login sebagai</p>
                     <p className="text-[14px] font-bold text-(--color-dark)">
-                      {user.fullName || user.userName}
+                      {displayName}
                     </p>
                     <p className="text-[12px] text-(--color-secondary)">
-                      {user.email}
+                      {activeUser.email}
                     </p>
                   </div>
                   <button

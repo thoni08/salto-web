@@ -400,15 +400,20 @@ export async function fetchUsers({ token, page = 1, limit = 10, search = "" }) {
 export async function fetchThreads({
   page = 1,
   limit = 100,
-  search = "",
+  searchTerm = "",
+  authorType = "",
 } = {}) {
   const queryParams = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   });
 
-  if (search.trim()) {
-    queryParams.set("search", search.trim());
+  if (searchTerm.trim()) {
+    queryParams.set("searchTerm", searchTerm.trim());
+  }
+
+  if (authorType.trim()) {
+    queryParams.set("authorType", authorType.trim());
   }
 
   return request(`/api/threads?${queryParams.toString()}`);
