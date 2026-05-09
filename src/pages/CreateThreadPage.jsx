@@ -7,6 +7,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
+import { getAuthUser } from "../services/authStorage.js";
 import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
 import {
   socialLinks,
@@ -30,6 +31,7 @@ function buildSuggestedTitles() {
 
 export default function CreateThreadPage() {
   const navigate = useNavigate();
+  const authUser = useMemo(() => getAuthUser(), []);
   const [title, setTitle] = useState("");
   const [audience, setAudience] = useState(
     threadCreateAudienceOptions[0] || "Mahasiswa",
@@ -97,6 +99,7 @@ export default function CreateThreadPage() {
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
         activeHref="/thread"
+        user={authUser}
         authActions={[
           { label: "Masuk", to: "/login", variant: "outline" },
           { label: "Daftar", to: "/signup", variant: "solid" },

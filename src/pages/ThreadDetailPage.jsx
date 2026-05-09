@@ -16,8 +16,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
-import { getAuthToken } from "../services/authStorage.js";
-import { fetchThreadById, mapApiThreadDetail } from "../services/saltoApi.js";
+import { getAuthToken, getAuthUser } from "../services/authStorage.js";
+import { fetchThreadById, fetchRelatedThreads, mapApiThreadDetail } from "../services/saltoApi.js";
 import {
   AnswerCard,
   AnswerComposerCard,
@@ -108,8 +108,10 @@ export default function ThreadDetailPage() {
   const [apiThreadSnapshot, setApiThreadSnapshot] = useState(null);
   const [isThreadLoading, setIsThreadLoading] = useState(true);
   const [threadLoadError, setThreadLoadError] = useState("");
+  const [relatedThreadsList, setRelatedThreadsList] = useState([]);
   const scrollDirection = useScrollDirection();
   const isAuthenticated = Boolean(getAuthToken());
+  const authUser = useMemo(() => getAuthUser(), []);
 
   const fallbackThreadData = useMemo(
     () => getThreadDetailData(threadId),
@@ -151,6 +153,34 @@ export default function ThreadDetailPage() {
     };
   }, [threadId]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadRelatedThreads() {
+      try {
+        const response = await fetchRelatedThreads(threadId);
+        if (active) {
+          const relatedData = Array.isArray(response?.data) ? response.data : [];
+          const mapped = relatedData.slice(0, 4).map((thread) => ({
+            id: String(thread.id),
+            title: String(thread.title || "Tanpa Judul"),
+          }));
+          setRelatedThreadsList(mapped);
+        }
+      } catch {
+        if (active) {
+          setRelatedThreadsList([]);
+        }
+      }
+    }
+
+    loadRelatedThreads();
+
+    return () => {
+      active = false;
+    };
+  }, [threadId]);
+
   const threadData = useMemo(
     () => mapApiThreadDetail(apiThreadSnapshot, fallbackThreadData),
     [apiThreadSnapshot, fallbackThreadData],
@@ -164,7 +194,7 @@ export default function ThreadDetailPage() {
     answers: initialAnswers,
     contributors,
     statRows,
-    relatedThreads,
+    relatedThreads: fallbackRelatedThreads,
   } = threadData;
 
   const currentThreadId = threadHeader.id;
@@ -172,6 +202,11 @@ export default function ThreadDetailPage() {
   const submittedAnswers = useMemo(
     () => submittedAnswersByThread[currentThreadId] || [],
     [currentThreadId, submittedAnswersByThread],
+  );
+
+  const displayedRelatedThreads = useMemo(
+    () => relatedThreadsList.length > 0 ? relatedThreadsList : fallbackRelatedThreads,
+    [relatedThreadsList, fallbackRelatedThreads],
   );
 
   const viewerProfile = useMemo(
@@ -241,6 +276,7 @@ export default function ThreadDetailPage() {
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
         activeHref="/thread"
+        user={authUser}
         className={`transition-all duration-300 ${
           scrollDirection === "down" ? "-top-25" : "top-0"
         }`}
@@ -502,17 +538,48 @@ export default function ThreadDetailPage() {
               </div>
 
               <ul className="space-y-2">
-                {relatedThreads.map((thread) => (
-                  <li key={thread}>
-                    <a
-                      href="#"
-                      onClick={preventPlaceholderClick}
-                      className={`${linkFx} inline-flex items-start gap-2 text-[12px] leading-4.5 text-(--color-dark) hover:text-(--color-like-blue)`}>
-                      <Icon icon={ArrowUpRight} className="mt-0.5 h-4 w-4" />
-                      <span>{thread}</span>
-                    </a>
-                  </li>
-                ))}
+                {displayedRelatedThreads.map((thread) => {
+                  const threadKey =
+                    typeof thread === "string"
+                      ? thread
+                      : thread?.id || thread?.title || thread;
+                  const threadTitle =
+                    typeof thread === "string"
+                      ? thread
+                      : thread?.title || "Thread Terkait";
+                  const threadHref =
+                    typeof thread === "string"
+                      ? "#"
+                      : `/thread/${thread?.id || ""}`;
+                  const isExternalLink = typeof thread !== "string" && thread?.id;
+
+                  return (
+                    <li key={threadKey}>
+                      {isExternalLink ? (
+                        <Link
+                          to={threadHref}
+                          className={`${linkFx} inline-flex items-start gap-2 text-[12px] leading-4.5 text-(--color-dark) hover:text-(--color-like-blue)`}>
+                          <Icon
+                            icon={ArrowUpRight}
+                            className="mt-0.5 h-4 w-4"
+                          />
+                          <span className="line-clamp-2">{threadTitle}</span>
+                        </Link>
+                      ) : (
+                        <a
+                          href={threadHref}
+                          onClick={preventPlaceholderClick}
+                          className={`${linkFx} inline-flex items-start gap-2 text-[12px] leading-4.5 text-(--color-dark) hover:text-(--color-like-blue)`}>
+                          <Icon
+                            icon={ArrowUpRight}
+                            className="mt-0.5 h-4 w-4"
+                          />
+                          <span className="line-clamp-2">{threadTitle}</span>
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           </aside>

@@ -2,7 +2,7 @@ import { LogOut, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
-import { clearAuthSession, getAuthToken } from "../services/authStorage.js";
+import { clearAuthSession, getAuthToken, getAuthUser } from "../services/authStorage.js";
 import { fetchUsers } from "../services/saltoApi.js";
 
 const PAGE_SIZE = 8;
@@ -54,6 +54,7 @@ function UserCard({ user }) {
 
 export default function UsersPage() {
   const token = getAuthToken();
+  const authUser = useMemo(() => getAuthUser(), []);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [users, setUsers] = useState([]);
@@ -131,7 +132,7 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
-      <SiteHeader activeHref="/users" authActions={[]} />
+      <SiteHeader activeHref="/users" user={authUser} authActions={[]} />
 
       <main className="mx-auto w-full max-w-316 px-4 py-8 lg:px-0">
         <section className="rounded-3xl border border-(--color-light-blue) bg-white p-6 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.45)] lg:p-8">

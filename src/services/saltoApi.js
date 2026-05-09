@@ -275,6 +275,32 @@ export function mapApiThreadListItem(thread, index = 0) {
   return buildThreadListItem(thread, index);
 }
 
+function buildContributorsFromParticipants(participantSummary = {}) {
+  const alumniResponded = participantSummary?.alumniResponded || [];
+  if (!Array.isArray(alumniResponded) || alumniResponded.length === 0) {
+    return [];
+  }
+
+  return alumniResponded.map((participant, index) => {
+    const nameValue = participant?.fullName || participant?.userName || "Anonim";
+    const roleValue = participant?.role || "Alumni";
+    const fieldValue = participant?.field || "Bidang belum tersedia";
+
+    return {
+      id: String(participant?.id || `contributor-${index + 1}`),
+      name: nameValue,
+      role: roleValue,
+      org: fieldValue,
+      badges: [],
+      stats: {
+        answer: "0",
+        approved: "-",
+        joined: "-",
+      },
+    };
+  });
+}
+
 export function mapApiThreadDetail(thread, fallback = {}) {
   if (!thread) {
     return fallback;
@@ -293,6 +319,10 @@ export function mapApiThreadDetail(thread, fallback = {}) {
   const totalAnswers = toNumber(
     stats.totalAnswers ?? stats.answers ?? stats.answerCount,
     0,
+  );
+
+  const contributorsFromApi = buildContributorsFromParticipants(
+    thread?.participantSummary,
   );
 
   return {
@@ -334,7 +364,12 @@ export function mapApiThreadDetail(thread, fallback = {}) {
       tone: tag.tone,
     })),
     threadIntroParagraphs: splitParagraphs(content),
+    contributors:
+      contributorsFromApi.length > 0
+        ? contributorsFromApi
+        : fallback.contributors || [],
     statRows: buildThreadStatRows(stats, fallback.statRows || []),
+    relatedThreads: fallback.relatedThreads || [],
   };
 }
 
@@ -381,4 +416,8 @@ export async function fetchThreads({
 
 export async function fetchThreadById(threadId) {
   return request(`/api/threads/${threadId}`);
+}
+
+export async function fetchRelatedThreads(threadId) {
+  return request(`/api/threads/${threadId}/related`);
 }
