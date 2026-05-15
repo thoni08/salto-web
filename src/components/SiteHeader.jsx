@@ -21,10 +21,6 @@ export function SiteHeader({
   const [sessionUser, setSessionUser] = useState(() => user ?? getAuthUser());
 
   useEffect(() => {
-    setSessionUser(user ?? getAuthUser());
-  }, [user]);
-
-  useEffect(() => {
     const syncSessionUser = () => {
       setSessionUser(getAuthUser());
     };

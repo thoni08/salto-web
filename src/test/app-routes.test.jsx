@@ -15,8 +15,28 @@ vi.mock("../services/saltoApi.js", async (importOriginal) => {
       token: "fake-token",
       user: { id: 1, name: "Test User" },
     }),
-    fetchThreads: vi.fn().mockResolvedValue({ data: [] }),
-    fetchThreadById: vi.fn().mockResolvedValue({ data: {} }),
+    fetchThreads: vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "thread-001",
+          title: "Bagaimana cara persiapan technical interview di perusahaan Big Tech (Google, Meta, Apple)?",
+          content: "Aku lagi cari strategi belajar yang terukur untuk technical interview",
+          author: { fullName: "Kiki Mahendra", role: "Mahasiswa" },
+          stats: { views: 1000, answers: 5 },
+          tags: [{ name: "Tech" }, { name: "Karir" }],
+        },
+      ],
+    }),
+    fetchThreadById: vi.fn().mockResolvedValue({
+      data: {
+        id: "thread-001",
+        title: "Bagaimana cara persiapan technical interview di perusahaan Big Tech (Google, Meta, Apple)?",
+        content: "Aku lagi cari strategi belajar yang terukur untuk technical interview",
+        author: { fullName: "Kiki Mahendra", role: "Mahasiswa" },
+        stats: { views: 1000, answers: 5 },
+        tags: [{ name: "Tech" }, { name: "Karir" }],
+      },
+    }),
     fetchUsers: vi.fn().mockResolvedValue({ data: [] }),
   };
 });

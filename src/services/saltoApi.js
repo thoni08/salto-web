@@ -1,28 +1,44 @@
+import axios from "axios";
+import { getAuthToken } from "./authStorage.js";
+
 const DEFAULT_API_BASE_URL = "https://salto-be.aauaah.tech";
 
 function getApiBaseUrl() {
   return import.meta.env.VITE_SALTO_API_URL || DEFAULT_API_BASE_URL;
 }
 
-async function request(path, options = {}) {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+const apiClient = axios.create({
+  baseURL: getApiBaseUrl(),
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-  const rawBody = await response.text();
-  const body = rawBody ? JSON.parse(rawBody) : null;
+// Interceptor untuk menambahkan auth token otomatis
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
-  if (!response.ok) {
-    const message = body?.message || body?.error || "Request gagal.";
+// Interceptor untuk handle error response
+apiClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Request gagal.";
     throw new Error(message);
-  }
-
-  return body;
-}
+  },
+);
 
 function toNumber(value, fallback = 0) {
   const numericValue = Number(value);
@@ -374,27 +390,21 @@ export function mapApiThreadDetail(thread, fallback = {}) {
 }
 
 export async function loginUser({ email, password }) {
-  return request("/api/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  return apiClient.post("/api/login", { email, password });
 }
 
 export async function fetchUsers({ token, page = 1, limit = 10, search = "" }) {
-  const queryParams = new URLSearchParams({
+  const params = {
     page: String(page),
     limit: String(limit),
-  });
+  };
 
   if (search.trim()) {
-    queryParams.set("search", search.trim());
+    params.search = search.trim();
   }
 
-  return request(`/api/users?${queryParams.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  return apiClient.get("/api/users", { params, headers });
 }
 
 export async function fetchThreads({
@@ -403,26 +413,26 @@ export async function fetchThreads({
   searchTerm = "",
   authorType = "",
 } = {}) {
-  const queryParams = new URLSearchParams({
+  const params = {
     page: String(page),
     limit: String(limit),
-  });
+  };
 
   if (searchTerm.trim()) {
-    queryParams.set("searchTerm", searchTerm.trim());
+    params.searchTerm = searchTerm.trim();
   }
 
   if (authorType.trim()) {
-    queryParams.set("authorType", authorType.trim());
+    params.authorType = authorType.trim();
   }
 
-  return request(`/api/threads?${queryParams.toString()}`);
+  return apiClient.get("/api/threads", { params });
 }
 
 export async function fetchThreadById(threadId) {
-  return request(`/api/threads/${threadId}`);
+  return apiClient.get(`/api/threads/${threadId}`);
 }
 
 export async function fetchRelatedThreads(threadId) {
-  return request(`/api/threads/${threadId}/related`);
+  return apiClient.get(`/api/threads/${threadId}/related`);
 }
