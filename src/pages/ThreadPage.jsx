@@ -1,30 +1,35 @@
 import {
-  ChevronDown,
-  Clock3,
-  Flame,
-  Medal,
-  MessageCircle,
-  PenSquare,
-  Pin,
-  Radio,
-  Search,
-  ThumbsUp,
-  Users,
-  Video,
+    ChevronDown,
+    Clock3,
+    Flame,
+    Medal,
+    MessageCircle,
+    PenSquare,
+    Pin,
+    Radio,
+    Search,
+    ThumbsUp,
+    Users,
+    Video,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
-import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
+import { fetchThreads, mapApiThreadListItem } from "../services/saltoApi.js";
+import { getAuthUser } from "../services/authStorage.js";
 import {
-  threadFilters as filters,
-  socialLinks,
-  threadListItems as threadItems,
-  topAlumni,
-  upcomingLives,
+  FooterSection,
+  ThreadCardSkeleton,
+} from "./thread-detail/components";
+import {
+    threadListItems as fallbackThreadItems,
+    threadFilters as filters,
+    socialLinks,
+    topAlumni,
+    upcomingLives,
 } from "./thread-detail/data";
 
-const THREADS_PER_PAGE = 3;
+const THREADS_PER_PAGE = 5;
 
 function parseParticipants(participantsLabel) {
   const match = String(participantsLabel).match(/\d+/);
@@ -135,7 +140,11 @@ export default function ThreadPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState(filters[0]);
   const [visibleCount, setVisibleCount] = useState(THREADS_PER_PAGE);
+  const [threadItems, setThreadItems] = useState(fallbackThreadItems);
   const [likedByThread, setLikedByThread] = useState({});
+  const [isThreadLoading, setIsThreadLoading] = useState(true);
+  const [threadLoadError, setThreadLoadError] = useState("");
+  const authUser = useMemo(() => getAuthUser(), []);
   const [liveSessions, setLiveSessions] = useState(() =>
     upcomingLives.map((item, index) => ({
       ...item,
@@ -145,35 +154,73 @@ export default function ThreadPage() {
     })),
   );
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadThreads() {
+      setIsThreadLoading(true);
+      setThreadLoadError("");
+
+      try {
+        let apiAuthorType = "";
+        if (activeFilter === "Mahasiswa") {
+          apiAuthorType = "STUDENT";
+        } else if (activeFilter === "Alumni") {
+          apiAuthorType = "ALUMNI";
+        }
+        // "Terjawab" is handled client-side in the filteredThreads useMemo.
+
+        const response = await fetchThreads({
+          page: 1,
+          limit: 100,
+          searchTerm: searchQuery,
+          authorType: apiAuthorType,
+        });
+        if (active) {
+          const mappedThreads = Array.isArray(response?.data)
+            ? response.data.map((thread, index) =>
+                mapApiThreadListItem(thread, index),
+              )
+            : [];
+
+          setThreadItems(
+            mappedThreads.length > 0 ? mappedThreads : [],
+          );
+        }
+      } catch (error) {
+        if (active) {
+          setThreadItems([]); // Set to empty array on error
+          setThreadLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gagal memuat thread dari API.",
+          );
+        }
+      } finally {
+        if (active) {
+          setIsThreadLoading(false);
+        }
+      }
+    }
+
+    loadThreads();
+
+    return () => {
+      active = false;
+    };
+  }, [searchQuery, activeFilter]);
+
   const filteredThreads = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-
-    return threadItems.filter((thread) => {
-      const passFilter =
-        activeFilter === "Semua"
-          ? true
-          : activeFilter === "Mahasiswa"
-            ? thread.roleLabel === "Mahasiswa"
-            : activeFilter === "Alumni"
-              ? thread.roleLabel === "Alumni"
-              : thread.badges.some((badge) => badge.type === "answered");
-
-      if (!passFilter) return false;
-      if (!normalizedQuery) return true;
-
-      const searchable = [
-        thread.title,
-        thread.excerpt,
-        thread.author,
-        thread.authorMeta,
-        ...thread.tags.map((tag) => tag.label),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(normalizedQuery);
-    });
-  }, [activeFilter, searchQuery]);
+    // If activeFilter is "Terjawab", we apply the client-side filter.
+    // Otherwise, the API has already filtered by searchTerm and authorType,
+    // so we just return the threadItems.
+    if (activeFilter === "Terjawab") {
+      return threadItems.filter((thread) =>
+        thread.badges.some((badge) => badge.type === "answered")
+      );
+    }
+    return threadItems;
+  }, [activeFilter, threadItems]);
 
   const visibleThreads = useMemo(
     () => filteredThreads.slice(0, visibleCount),
@@ -231,6 +278,7 @@ export default function ThreadPage() {
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
         activeHref="/thread"
+        user={authUser}
         authActions={[
           { label: "Masuk", to: "/login", variant: "outline" },
           { label: "Daftar", to: "/signup", variant: "solid" },
@@ -239,7 +287,7 @@ export default function ThreadPage() {
 
       <main className="mx-auto w-full max-w-316 px-4 pt-6 lg:px-0">
         <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,916px)_320px]">
-          <section className="h-236.75">
+          <section>
             <header className="h-25">
               <h1 className="text-[38px] leading-[1.15] font-bold text-(--color-dark)">
                 Diskusi Terbaru
@@ -273,8 +321,18 @@ export default function ThreadPage() {
               ))}
             </div>
 
-            <div className="mt-6 flex h-191.75 flex-col gap-4">
-              {visibleThreads.map((thread, index) => {
+            <div className="mt-6 flex flex-col gap-4">
+              {isThreadLoading
+                ? [1, 2, 3].map((key) => <ThreadCardSkeleton key={key} />)
+                : null}
+
+              {!isThreadLoading && threadLoadError ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-[13px] text-amber-700">
+                  {threadLoadError}
+                </div>
+              ) : null}
+
+              {!isThreadLoading && visibleThreads.map((thread) => {
                 const isLiked = Boolean(likedByThread[thread.id]);
                 const likeCount = thread.stats.likes + (isLiked ? 1 : 0);
 
@@ -287,9 +345,7 @@ export default function ThreadPage() {
                     onKeyDown={(event) =>
                       handleThreadCardKeyDown(event, thread.id)
                     }
-                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue) ${
-                      index === 1 ? "h-57" : "h-56.25"
-                    }`}>
+                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)`}>
                     <div className="flex items-center gap-2.5">
                       {thread.badges.map((badge) => {
                         const meta = threadBadgeMeta(badge.type);
@@ -383,30 +439,32 @@ export default function ThreadPage() {
                 );
               })}
 
-              {visibleThreads.length === 0 ? (
+              {!isThreadLoading && visibleThreads.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-6 py-8 text-center text-[14px] text-(--color-secondary)">
                   Tidak ada thread yang cocok dengan filter atau pencarian ini.
                 </div>
               ) : null}
 
-              <button
-                type="button"
-                disabled={!canLoadMore}
-                onClick={() =>
-                  setVisibleCount((previous) =>
-                    Math.min(
-                      previous + THREADS_PER_PAGE,
-                      filteredThreads.length,
-                    ),
-                  )
-                }
-                className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
-                Muat Lebih Banyak <ChevronDown className="h-3 w-3" />
-              </button>
+              {!isThreadLoading ? (
+                <button
+                  type="button"
+                  disabled={!canLoadMore}
+                  onClick={() =>
+                    setVisibleCount((previous) =>
+                      Math.min(
+                        previous + THREADS_PER_PAGE,
+                        filteredThreads.length,
+                      ),
+                    )
+                  }
+                  className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
+                  Muat Lebih Banyak <ChevronDown className="h-3 w-3" />
+                </button>
+              ) : null}
             </div>
           </section>
 
-          <aside className="h-190 space-y-6">
+          <aside className="space-y-6">
             <Link
               to="/thread/create"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25343f] px-4 text-[16px] leading-6 font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition hover:bg-[#1f2c35]">

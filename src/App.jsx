@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SiteHeader } from "./components/SiteHeader.jsx";
+import { getAuthUser } from "./services/authStorage.js";
 import { FooterSection } from "./pages/thread-detail/components/FooterSection.jsx";
 import { socialLinks, trendingThreads } from "./pages/thread-detail/data";
 
@@ -103,10 +104,13 @@ const upcomingCards = [
 ];
 
 function App() {
+  const authUser = getAuthUser();
+
   return (
     <div className="min-h-screen bg-white text-(--color-dark)">
       <SiteHeader
         activeHref="/"
+        user={authUser}
         authActions={[
           { label: "Masuk", to: "/login", variant: "outline" },
           { label: "Daftar", to: "/signup", variant: "solid" },
