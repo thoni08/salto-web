@@ -1,16 +1,52 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Navigate, Route, Routes } from "react-router-dom";
 import App from "../App";
 import LoginPage from "../pages/LoginPage";
 import ThreadPage from "../pages/ThreadPage";
 import ThreadDetailPage from "../pages/ThreadDetailPage";
+import UsersPage from "../pages/UsersPage";
+
+vi.mock("../services/saltoApi.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    loginUser: vi.fn().mockResolvedValue({
+      token: "fake-token",
+      user: { id: 1, name: "Test User" },
+    }),
+    fetchThreads: vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "thread-001",
+          title: "Bagaimana cara persiapan technical interview di perusahaan Big Tech (Google, Meta, Apple)?",
+          content: "Aku lagi cari strategi belajar yang terukur untuk technical interview",
+          author: { fullName: "Kiki Mahendra", role: "Mahasiswa" },
+          stats: { views: 1000, answers: 5 },
+          tags: [{ name: "Tech" }, { name: "Karir" }],
+        },
+      ],
+    }),
+    fetchThreadById: vi.fn().mockResolvedValue({
+      data: {
+        id: "thread-001",
+        title: "Bagaimana cara persiapan technical interview di perusahaan Big Tech (Google, Meta, Apple)?",
+        content: "Aku lagi cari strategi belajar yang terukur untuk technical interview",
+        author: { fullName: "Kiki Mahendra", role: "Mahasiswa" },
+        stats: { views: 1000, answers: 5 },
+        tags: [{ name: "Tech" }, { name: "Karir" }],
+      },
+    }),
+    fetchUsers: vi.fn().mockResolvedValue({ data: [] }),
+  };
+});
 
 function renderRoutes(initialEntries = ["/login"]) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="/" element={<App />} />
         <Route path="/thread" element={<ThreadPage />} />
         <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
