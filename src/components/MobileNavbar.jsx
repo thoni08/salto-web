@@ -1,19 +1,20 @@
+import { Home, LogIn, MessageSquare, Radio, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Radio, User, LogIn } from "lucide-react";
-import { Icon } from "../pages/thread-detail/components/Icon";
 import { useScrollDirection } from "../hooks/useScrollDirection";
+import { Icon } from "../pages/thread-detail/components/Icon";
+import { getAuthToken } from "../services/authStorage.js";
 
 export function MobileNavbar() {
   const location = useLocation();
   const scrollDirection = useScrollDirection();
-  const isAuthenticated = localStorage.getItem("authToken");
+  const isAuthenticated = Boolean(getAuthToken());
 
   const isActive = (path) => location.pathname === path;
 
   const navItems = [
     { path: "/", icon: Home, label: "Beranda" },
-    { path: "/thread/25-885", icon: MessageSquare, label: "Diskusi" },
-    { path: "#", icon: Radio, label: "Live" },
+    { path: "/thread", icon: MessageSquare, label: "Diskusi" },
+    { path: "/live", icon: Radio, label: "Live" },
   ];
 
   return (
@@ -24,19 +25,6 @@ export function MobileNavbar() {
       aria-label="Mobile navigation">
       {navItems.map(({ path, icon, label }) => {
         const active = isActive(path);
-
-        if (path === "#") {
-          return (
-            <a
-              key={label}
-              href="#"
-              className={`mx-auto flex w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-all text-(--color-secondary) hover:text-(--color-dark)`}
-              title={label}>
-              <Icon icon={icon} className="h-5 w-5 stroke-[1.8px]" />
-              <span className="text-[10px] font-medium">{label}</span>
-            </a>
-          );
-        }
 
         return (
           <Link

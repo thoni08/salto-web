@@ -12,9 +12,20 @@ import {
   Share2,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
+import { getAuthToken, getAuthUser } from "../services/authStorage.js";
+import { fetchThreadById, fetchRelatedThreads, mapApiThreadDetail } from "../services/saltoApi.js";
+import {
+  AnswerCard,
+  AnswerComposerCard,
+  Avatar,
+  ContributorCard,
+  FooterSection,
+  Icon,
+} from "./thread-detail/components";
 import {
   buttonFx,
   linkFx,
@@ -24,26 +35,11 @@ import {
   answerComposerMinCharacters,
   answerComposerRestrictionMessage,
   answerComposerTip,
-  answers,
   currentViewer,
-  contributors,
-  relatedThreads,
+  getThreadDetailData,
   socialLinks,
-  statRows,
-  threadBreadcrumbs,
-  threadCategoryChips,
-  threadHeader,
-  threadIntroParagraphs,
 } from "./thread-detail/data";
 import { submitThreadAnswer } from "./thread-detail/threadDetailApi";
-import {
-  AnswerCard,
-  AnswerComposerCard,
-  Avatar,
-  ContributorCard,
-  FooterSection,
-  Icon,
-} from "./thread-detail/components";
 
 const MONTH_INDEX_BY_NAME = {
   Jan: 0,
@@ -58,6 +54,11 @@ const MONTH_INDEX_BY_NAME = {
   Oct: 9,
   Nov: 10,
   Dec: 11,
+};
+
+const BREADCRUMB_HREF_BY_LABEL = {
+  Beranda: "/",
+  Diskusi: "/thread",
 };
 
 function parseThreadTimestamp(createdAt) {
@@ -100,11 +101,113 @@ function sortAnswerList(answerList, sortMode) {
 }
 
 export default function ThreadDetailPage() {
-  const [sortMode, setSortMode] = useState("popular");
+  const { threadId } = useParams();
+  const [sortModeByThread, setSortModeByThread] = useState({});
   const [viewerIsAlumni, setViewerIsAlumni] = useState(currentViewer.isAlumni);
-  const [submittedAnswers, setSubmittedAnswers] = useState([]);
+  const [submittedAnswersByThread, setSubmittedAnswersByThread] = useState({});
+  const [apiThreadSnapshot, setApiThreadSnapshot] = useState(null);
+  const [isThreadLoading, setIsThreadLoading] = useState(true);
+  const [threadLoadError, setThreadLoadError] = useState("");
+  const [relatedThreadsList, setRelatedThreadsList] = useState([]);
   const scrollDirection = useScrollDirection();
-  const isAuthenticated = !!localStorage.getItem("authToken");
+  const isAuthenticated = Boolean(getAuthToken());
+  const authUser = useMemo(() => getAuthUser(), []);
+
+  const fallbackThreadData = useMemo(
+    () => getThreadDetailData(threadId),
+    [threadId],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadThreadDetail() {
+      setIsThreadLoading(true);
+      setThreadLoadError("");
+
+      try {
+        const response = await fetchThreadById(threadId);
+        if (active) {
+          setApiThreadSnapshot(response?.data || null);
+        }
+      } catch (error) {
+        if (active) {
+          setApiThreadSnapshot(null);
+          setThreadLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gagal memuat detail thread dari API.",
+          );
+        }
+      } finally {
+        if (active) {
+          setIsThreadLoading(false);
+        }
+      }
+    }
+
+    loadThreadDetail();
+
+    return () => {
+      active = false;
+    };
+  }, [threadId]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadRelatedThreads() {
+      try {
+        const response = await fetchRelatedThreads(threadId);
+        if (active) {
+          const relatedData = Array.isArray(response?.data) ? response.data : [];
+          const mapped = relatedData.slice(0, 4).map((thread) => ({
+            id: String(thread.id),
+            title: String(thread.title || "Tanpa Judul"),
+          }));
+          setRelatedThreadsList(mapped);
+        }
+      } catch {
+        if (active) {
+          setRelatedThreadsList([]);
+        }
+      }
+    }
+
+    loadRelatedThreads();
+
+    return () => {
+      active = false;
+    };
+  }, [threadId]);
+
+  const threadData = useMemo(
+    () => mapApiThreadDetail(apiThreadSnapshot, fallbackThreadData),
+    [apiThreadSnapshot, fallbackThreadData],
+  );
+
+  const {
+    threadHeader,
+    threadBreadcrumbs,
+    threadCategoryChips,
+    threadIntroParagraphs,
+    answers: initialAnswers,
+    contributors,
+    statRows,
+    relatedThreads: fallbackRelatedThreads,
+  } = threadData;
+
+  const currentThreadId = threadHeader.id;
+  const sortMode = sortModeByThread[currentThreadId] || "popular";
+  const submittedAnswers = useMemo(
+    () => submittedAnswersByThread[currentThreadId] || [],
+    [currentThreadId, submittedAnswersByThread],
+  );
+
+  const displayedRelatedThreads = useMemo(
+    () => relatedThreadsList.length > 0 ? relatedThreadsList : fallbackRelatedThreads,
+    [relatedThreadsList, fallbackRelatedThreads],
+  );
 
   const viewerProfile = useMemo(
     () => ({
@@ -120,8 +223,8 @@ export default function ThreadDetailPage() {
   );
 
   const visibleAnswers = useMemo(
-    () => sortAnswerList([...answers, ...submittedAnswers], sortMode),
-    [sortMode, submittedAnswers],
+    () => sortAnswerList([...initialAnswers, ...submittedAnswers], sortMode),
+    [initialAnswers, sortMode, submittedAnswers],
   );
 
   const answerCountLabel = `${visibleAnswers.length} Jawaban`;
@@ -151,8 +254,17 @@ export default function ThreadDetailPage() {
       };
     }
 
-    setSubmittedAnswers((previous) => [...previous, submitResult.answer]);
-    setSortMode("latest");
+    setSubmittedAnswersByThread((previous) => {
+      const currentItems = previous[currentThreadId] || [];
+      return {
+        ...previous,
+        [currentThreadId]: [...currentItems, submitResult.answer],
+      };
+    });
+    setSortModeByThread((previous) => ({
+      ...previous,
+      [currentThreadId]: "latest",
+    }));
 
     return {
       ok: true,
@@ -162,70 +274,35 @@ export default function ThreadDetailPage() {
 
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
-      <header
-        className={`sticky z-30 h-16.25 border-b border-(--color-light-blue)/70 bg-(--color-light-blue)/50 backdrop-blur-[6px] transition-all duration-300 ${
+      <SiteHeader
+        activeHref="/thread"
+        user={authUser}
+        className={`transition-all duration-300 ${
           scrollDirection === "down" ? "-top-25" : "top-0"
-        }`}>
-        <div className="mx-auto flex h-full w-full max-w-316 items-center justify-between gap-4 px-4 lg:px-0">
-          <Link to="/" className={`${linkFx} leading-tight`}>
-            <p className="text-[20px] tracking-[2px] font-black">
-              <span className="text-(--color-primary)">S</span>
-              <span className="text-(--color-dark)">ALTO</span>
-            </p>
-            <p className="text-[10px] leading-4.5 text-(--color-secondary)">
-              Let&apos;s Connect, Grow Together
-            </p>
-          </Link>
-
-          <nav className="hidden items-center gap-5 text-[14px] leading-4.5 md:flex">
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} text-(--color-dark) hover:text-(--color-like-blue)`}>
-              Beranda
-            </a>
-
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} flex flex-col items-center text-(--color-dark) font-bold`}>
-              Diskusi
-              <span className="mt-0.75 h-0.5 w-13.25 rounded-full bg-(--color-like-blue)" />
-            </a>
-
-            <a
-              href="#"
-              onClick={preventPlaceholderClick}
-              className={`${linkFx} inline-flex items-center gap-1.25 text-(--color-dark) hover:text-(--color-like-blue)`}>
-              <span className="h-1.75 w-1.75 rounded-full bg-red-500" />
-              Live
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className={`md:hidden ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
-              Masuk
-            </Link>
-            {!isAuthenticated ? (
-              <Link
-                to="/login"
-                className={`hidden md:flex ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
-                Masuk
-              </Link>
-            ) : (
-              <a
-                href="#"
-                className={`hidden md:flex ${buttonFx} rounded-full border border-(--color-dark) px-5 py-2 text-[14px] leading-4.5 text-(--color-dark) hover:bg-(--color-dark) hover:text-white`}>
-                Profil
-              </a>
-            )}
-          </div>
-        </div>
-      </header>
+        }`}
+        authActions={
+          isAuthenticated
+            ? [{ label: "Profil", to: "#", variant: "outline" }]
+            : [
+                { label: "Masuk", to: "/login", variant: "outline" },
+                { label: "Daftar", to: "/signup", variant: "solid" },
+              ]
+        }
+      />
 
       <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-3.5 lg:px-0">
+        {isThreadLoading ? (
+          <div className="mb-3 rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-5 py-3 text-[13px] text-(--color-secondary)">
+            Memuat detail thread dari API...
+          </div>
+        ) : null}
+
+        {!isThreadLoading && threadLoadError ? (
+          <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-[13px] text-amber-700">
+            {threadLoadError}
+          </div>
+        ) : null}
+
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,912px)_320px]">
           <section className="space-y-3 min-w-0">
             <nav className="flex flex-nowrap items-center gap-1.5 overflow-hidden px-1 text-[13px] md:text-[14px] leading-5 text-(--color-secondary)">
@@ -237,14 +314,23 @@ export default function ThreadDetailPage() {
                       ? "min-w-0 shrink"
                       : "shrink-0"
                   }`}>
-                  <span
-                    className={`truncate ${
-                      index === threadBreadcrumbs.length - 1
-                        ? "text-(--color-dark)"
-                        : ""
-                    }`}>
-                    {item}
-                  </span>
+                  {index < threadBreadcrumbs.length - 1 &&
+                  BREADCRUMB_HREF_BY_LABEL[item] ? (
+                    <Link
+                      to={BREADCRUMB_HREF_BY_LABEL[item]}
+                      className={`${linkFx} truncate hover:text-(--color-dark)`}>
+                      {item}
+                    </Link>
+                  ) : (
+                    <span
+                      className={`truncate ${
+                        index === threadBreadcrumbs.length - 1
+                          ? "text-(--color-dark)"
+                          : ""
+                      }`}>
+                      {item}
+                    </span>
+                  )}
                   {index < threadBreadcrumbs.length - 1 ? (
                     <span className="shrink-0 text-[10px] md:text-[12px]">
                       /
@@ -257,12 +343,12 @@ export default function ThreadDetailPage() {
             <article className="rounded-2xl border border-(--color-like-blue) bg-white px-8 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f3f4f6] pb-4">
                 <div className="flex flex-wrap items-center gap-2 text-[14px] leading-5 text-[#6b7280]">
-                  <button
-                    type="button"
+                  <Link
+                    to="/thread"
                     className={`${buttonFx} inline-flex items-center gap-2 rounded-full text-[14px] font-medium text-[#6b7280] hover:text-(--color-dark)`}>
                     <Icon icon={ArrowLeft} className="h-4 w-4" />
                     Kembali ke Diskusi
-                  </button>
+                  </Link>
                 </div>
 
                 <button
@@ -342,7 +428,12 @@ export default function ThreadDetailPage() {
               <div className="inline-flex items-center rounded-full border border-(--color-gray) bg-white p-1">
                 <button
                   type="button"
-                  onClick={() => setSortMode("popular")}
+                  onClick={() =>
+                    setSortModeByThread((previous) => ({
+                      ...previous,
+                      [currentThreadId]: "popular",
+                    }))
+                  }
                   className={`${buttonFx} rounded-full px-4 py-1 text-[12px] leading-4 font-medium ${
                     sortMode === "popular"
                       ? "bg-(--color-dark) text-white"
@@ -352,7 +443,12 @@ export default function ThreadDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSortMode("latest")}
+                  onClick={() =>
+                    setSortModeByThread((previous) => ({
+                      ...previous,
+                      [currentThreadId]: "latest",
+                    }))
+                  }
                   className={`${buttonFx} rounded-full px-4 py-1 text-[12px] leading-4 font-medium ${
                     sortMode === "latest"
                       ? "bg-(--color-dark) text-white"
@@ -442,17 +538,48 @@ export default function ThreadDetailPage() {
               </div>
 
               <ul className="space-y-2">
-                {relatedThreads.map((thread) => (
-                  <li key={thread}>
-                    <a
-                      href="#"
-                      onClick={preventPlaceholderClick}
-                      className={`${linkFx} inline-flex items-start gap-2 text-[12px] leading-4.5 text-(--color-dark) hover:text-(--color-like-blue)`}>
-                      <Icon icon={ArrowUpRight} className="mt-0.5 h-4 w-4" />
-                      <span>{thread}</span>
-                    </a>
-                  </li>
-                ))}
+                {displayedRelatedThreads.map((thread) => {
+                  const threadKey =
+                    typeof thread === "string"
+                      ? thread
+                      : thread?.id || thread?.title || thread;
+                  const threadTitle =
+                    typeof thread === "string"
+                      ? thread
+                      : thread?.title || "Thread Terkait";
+                  const threadHref =
+                    typeof thread === "string"
+                      ? "#"
+                      : `/thread/${thread?.id || ""}`;
+                  const isExternalLink = typeof thread !== "string" && thread?.id;
+
+                  return (
+                    <li key={threadKey}>
+                      {isExternalLink ? (
+                        <Link
+                          to={threadHref}
+                          className={`${linkFx} inline-flex items-start gap-2 text-[12px] leading-4.5 text-(--color-dark) hover:text-(--color-like-blue)`}>
+                          <Icon
+                            icon={ArrowUpRight}
+                            className="mt-0.5 h-4 w-4"
+                          />
+                          <span className="line-clamp-2">{threadTitle}</span>
+                        </Link>
+                      ) : (
+                        <a
+                          href={threadHref}
+                          onClick={preventPlaceholderClick}
+                          className={`${linkFx} inline-flex items-start gap-2 text-[12px] leading-4.5 text-(--color-dark) hover:text-(--color-like-blue)`}>
+                          <Icon
+                            icon={ArrowUpRight}
+                            className="mt-0.5 h-4 w-4"
+                          />
+                          <span className="line-clamp-2">{threadTitle}</span>
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           </aside>

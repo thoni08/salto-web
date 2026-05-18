@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -13,4 +13,31 @@
   --color-like-blue: #7783d4;
   --color-light-blue: #ced0f9;
   --color-gray: #f1f5f9;
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+    background: var(--color-gray);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    color: var(--color-dark);
+    font-family: var(--font-sans);
+    background: var(--color-gray);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(119, 131, 212, 0.25);
+    color: var(--color-dark);
+  }
 }
