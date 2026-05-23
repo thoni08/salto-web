@@ -32,6 +32,13 @@ function buildSuggestedTitles() {
 export default function CreateThreadPage() {
   const navigate = useNavigate();
   const authUser = useMemo(() => getAuthUser(), []);
+  const isStudent = useMemo(() => {
+    if (!authUser) return false;
+    if (authUser.isAlumni) return false;
+    const role = String(authUser.role || authUser.subtitle || "").toLowerCase();
+    if (role.includes("alumni")) return false;
+    return true;
+  }, [authUser]);
   const [title, setTitle] = useState("");
   const [audience, setAudience] = useState(
     threadCreateAudienceOptions[0] || "Mahasiswa",
@@ -46,6 +53,7 @@ export default function CreateThreadPage() {
   const canSubmit = selectedCategories.length > 0;
 
   const toggleCategory = (category) => {
+    if (!isStudent) return; // only students can modify categories
     setSelectedCategories((previous) => {
       if (previous.includes(category)) {
         return previous.filter((item) => item !== category);
@@ -67,6 +75,12 @@ export default function CreateThreadPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    if (!isStudent) {
+      setFeedback("Hanya mahasiswa (student) yang dapat membuat thread.");
+      setIsErrorFeedback(true);
+      return;
+    }
 
     const sanitizedTitle = title.trim();
     const sanitizedContent = content.trim();
@@ -138,6 +152,7 @@ export default function CreateThreadPage() {
                 type="text"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
+                disabled={!isStudent}
                 placeholder="Contoh: Strategi belajar DSA efektif untuk interview intern"
                 className="h-12 w-full rounded-xl border border-[#dbe2f1] bg-white px-4 text-[14px] text-(--color-dark) outline-none placeholder:text-(--color-secondary) focus-visible:ring-2 focus-visible:ring-(--color-like-blue)/60"
               />
@@ -154,6 +169,7 @@ export default function CreateThreadPage() {
                   id="thread-audience"
                   value={audience}
                   onChange={(event) => setAudience(event.target.value)}
+                  disabled={!isStudent}
                   className="h-12 w-full rounded-xl border border-[#dbe2f1] bg-white px-4 text-[14px] text-(--color-dark) outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)/60">
                   {threadCreateAudienceOptions.map((option) => (
                     <option key={option} value={option}>
@@ -175,6 +191,7 @@ export default function CreateThreadPage() {
                         key={category}
                         type="button"
                         onClick={() => toggleCategory(category)}
+                        disabled={!isStudent}
                         className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition ${
                           active
                             ? "bg-(--color-dark) text-white"
@@ -200,6 +217,7 @@ export default function CreateThreadPage() {
                 id="thread-content"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
+                disabled={!isStudent}
                 placeholder="Jelaskan konteks pertanyaanmu, langkah yang sudah kamu coba, dan insight yang kamu butuhkan dari alumni atau member lain."
                 className="h-52 w-full resize-none rounded-xl border border-[#dbe2f1] bg-white p-4 text-[14px] leading-6 text-(--color-dark) outline-none placeholder:text-(--color-secondary) focus-visible:ring-2 focus-visible:ring-(--color-like-blue)/60"
               />
@@ -239,7 +257,7 @@ export default function CreateThreadPage() {
               </p>
               <button
                 type="submit"
-                disabled={!canSubmit}
+                disabled={!canSubmit || !isStudent}
                 className="inline-flex items-center gap-2 rounded-full bg-[#25343f] px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[#1f2c35] disabled:cursor-not-allowed disabled:opacity-55">
                 <SendHorizontal className="h-4 w-4" />
                 Publikasikan Thread
