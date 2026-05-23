@@ -1,18 +1,19 @@
+import { Home, LogIn, MessageSquare, Radio, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Radio, User, LogIn } from "lucide-react";
-import { Icon } from "../pages/thread-detail/components/Icon";
 import { useScrollDirection } from "../hooks/useScrollDirection";
+import { Icon } from "../pages/thread-detail/components/Icon";
+import { getAuthToken } from "../services/authStorage.js";
 
 export function MobileNavbar() {
   const location = useLocation();
   const scrollDirection = useScrollDirection();
-  const isAuthenticated = localStorage.getItem("authToken");
+  const isAuthenticated = Boolean(getAuthToken());
 
   const isActive = (path) => location.pathname === path;
 
   const navItems = [
     { path: "/", icon: Home, label: "Beranda" },
-    { path: "/thread/25-885", icon: MessageSquare, label: "Diskusi" },
+    { path: "/thread", icon: MessageSquare, label: "Diskusi" },
     { path: "/live", icon: Radio, label: "Live" },
   ];
 

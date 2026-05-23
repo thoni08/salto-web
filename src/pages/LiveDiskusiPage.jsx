@@ -10,6 +10,7 @@ import {
   Video,
 } from "lucide-react";
 import { SiteHeader } from "../components/SiteHeader.jsx";
+import { getAuthUser } from "../services/authStorage.js";
 import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
 import { socialLinks } from "./thread-detail/data";
 import { LiveChatMessage } from "./live-diskusi/components/index.js";
@@ -89,6 +90,7 @@ const upcomingSessions = [
 ];
 
 export default function LiveDiskusiPage() {
+  const authUser = useMemo(() => getAuthUser(), []);
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [timerSeconds, setTimerSeconds] = useState(42 * 60 + 15);
@@ -149,6 +151,7 @@ export default function LiveDiskusiPage() {
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
         activeHref="/live"
+        user={authUser}
         authActions={[
           { label: "Masuk", to: "/login", variant: "outline" },
           { label: "Daftar", to: "/signup", variant: "solid" },
