@@ -23,7 +23,6 @@ import {
 } from "./thread-detail/components";
 import {
     threadListItems as fallbackThreadItems,
-    threadFilters as filters,
     socialLinks,
     topAlumni,
     upcomingLives,
@@ -44,6 +43,14 @@ function getInitials(name) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+}
+
+function formatTagDisplay(tagLabel) {
+  return String(tagLabel || "")
+    .replace(/-/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function badgeMeta(type) {
@@ -138,7 +145,7 @@ function UpcomingLiveCard({
 export default function ThreadPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState(filters[0]);
+  const [selectedTag, setSelectedTag] = useState(null);
   const [visibleCount, setVisibleCount] = useState(THREADS_PER_PAGE);
   const [threadItems, setThreadItems] = useState(fallbackThreadItems);
   const [likedByThread, setLikedByThread] = useState({});
@@ -162,19 +169,13 @@ export default function ThreadPage() {
       setThreadLoadError("");
 
       try {
-        let apiAuthorType = "";
-        if (activeFilter === "Mahasiswa") {
-          apiAuthorType = "STUDENT";
-        } else if (activeFilter === "Alumni") {
-          apiAuthorType = "ALUMNI";
-        }
-        // "Terjawab" is handled client-side in the filteredThreads useMemo.
-
+        // Fetch threads WITHOUT searchTerm - do filtering client-side instead
+        // This allows searching by author name, title, and content
         const response = await fetchThreads({
           page: 1,
           limit: 100,
-          searchTerm: searchQuery,
-          authorType: apiAuthorType,
+          searchTerm: "",
+          authorType: "",
         });
         if (active) {
           const mappedThreads = Array.isArray(response?.data)
@@ -208,19 +209,47 @@ export default function ThreadPage() {
     return () => {
       active = false;
     };
-  }, [searchQuery, activeFilter]);
+  }, []);
+
+  const availableTags = useMemo(() => {
+    const tagCount = new Map();
+    threadItems.forEach((thread) => {
+      thread.tags?.forEach((tag) => {
+        if (tag.label) {
+          tagCount.set(tag.label, (tagCount.get(tag.label) || 0) + 1);
+        }
+      });
+    });
+    // Sort by frequency (descending) and take top 6
+    return Array.from(tagCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([label]) => label);
+  }, [threadItems]);
 
   const filteredThreads = useMemo(() => {
-    // If activeFilter is "Terjawab", we apply the client-side filter.
-    // Otherwise, the API has already filtered by searchTerm and authorType,
-    // so we just return the threadItems.
-    if (activeFilter === "Terjawab") {
-      return threadItems.filter((thread) =>
-        thread.badges.some((badge) => badge.type === "answered")
+    let results = threadItems;
+
+    // Filter by search query (API already filtered by searchTerm, but we add client-side author name filtering)
+    if (searchQuery.trim()) {
+      const queryLower = searchQuery.toLowerCase();
+      results = results.filter((thread) => {
+        const authorMatch = thread.author?.toLowerCase().includes(queryLower);
+        const titleMatch = thread.title?.toLowerCase().includes(queryLower);
+        const excerptMatch = thread.excerpt?.toLowerCase().includes(queryLower);
+        return authorMatch || titleMatch || excerptMatch;
+      });
+    }
+
+    // Filter by selected tag
+    if (selectedTag) {
+      results = results.filter((thread) =>
+        thread.tags?.some((tag) => tag.label === selectedTag)
       );
     }
-    return threadItems;
-  }, [activeFilter, threadItems]);
+
+    return results;
+  }, [selectedTag, threadItems, searchQuery]);
 
   const visibleThreads = useMemo(
     () => filteredThreads.slice(0, visibleCount),
@@ -234,8 +263,8 @@ export default function ThreadPage() {
     setVisibleCount(THREADS_PER_PAGE);
   };
 
-  const handleFilterClick = (filter) => {
-    setActiveFilter(filter);
+  const handleTagClick = (tag) => {
+    setSelectedTag(selectedTag === tag ? null : tag);
     setVisibleCount(THREADS_PER_PAGE);
   };
 
@@ -305,20 +334,33 @@ export default function ThreadPage() {
               </label>
             </header>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {filters.map((filter) => (
+            <div className="mt-6 overflow-x-auto pb-2">
+              <div className="flex flex-nowrap gap-2">
                 <button
-                  key={filter}
+                  key="all"
                   type="button"
-                  onClick={() => handleFilterClick(filter)}
-                  className={`inline-flex h-8 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
-                    activeFilter === filter
+                  onClick={() => setSelectedTag(null)}
+                  className={`inline-flex h-8 shrink-0 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
+                    selectedTag === null
                       ? "bg-[#25343f] text-white"
                       : "bg-[#f1f5f9] text-[#25343f] hover:bg-[#e2e8f0]"
                   }`}>
-                  {filter}
+                  Semua
                 </button>
-              ))}
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleTagClick(tag)}
+                    className={`inline-flex h-8 shrink-0 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
+                      selectedTag === tag
+                        ? "bg-[#25343f] text-white"
+                        : "bg-[#f1f5f9] text-[#25343f] hover:bg-[#e2e8f0]"
+                    }`}>
+                    {formatTagDisplay(tag)}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mt-6 flex flex-col gap-4">
@@ -401,7 +443,7 @@ export default function ThreadPage() {
                               <span
                                 key={tag.label}
                                 className={`rounded-full px-2.5 py-1 text-[12px] leading-4 font-medium ${tag.tone}`}>
-                                {tag.label}
+                                {formatTagDisplay(tag.label)}
                               </span>
                             ))}
                           </div>

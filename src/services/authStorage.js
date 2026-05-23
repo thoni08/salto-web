@@ -5,6 +5,18 @@ function readStorageValue(key) {
   return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
 }
 
+function getAuthStorage() {
+  if (localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_KEY)) {
+    return localStorage;
+  }
+
+  if (sessionStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(USER_KEY)) {
+    return sessionStorage;
+  }
+
+  return null;
+}
+
 export function getAuthToken() {
   return readStorageValue(TOKEN_KEY);
 }
@@ -41,4 +53,20 @@ export function clearAuthSession() {
   sessionStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   sessionStorage.removeItem(USER_KEY);
+}
+
+export function updateAuthUser(user) {
+  const storage = getAuthStorage();
+
+  if (!storage) {
+    return;
+  }
+
+  if (user) {
+    storage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    storage.removeItem(USER_KEY);
+  }
+
+  window.dispatchEvent(new Event("storage"));
 }

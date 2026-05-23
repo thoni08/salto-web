@@ -17,7 +17,11 @@ import { Link, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import { getAuthToken, getAuthUser } from "../services/authStorage.js";
-import { fetchThreadById, fetchRelatedThreads, mapApiThreadDetail } from "../services/saltoApi.js";
+import {
+  fetchRelatedThreads,
+  fetchThreadById,
+  mapApiThreadDetail,
+} from "../services/saltoApi.js";
 import {
   AnswerCard,
   AnswerComposerCard,
@@ -160,7 +164,9 @@ export default function ThreadDetailPage() {
       try {
         const response = await fetchRelatedThreads(threadId);
         if (active) {
-          const relatedData = Array.isArray(response?.data) ? response.data : [];
+          const relatedData = Array.isArray(response?.data)
+            ? response.data
+            : [];
           const mapped = relatedData.slice(0, 4).map((thread) => ({
             id: String(thread.id),
             title: String(thread.title || "Tanpa Judul"),
@@ -205,7 +211,10 @@ export default function ThreadDetailPage() {
   );
 
   const displayedRelatedThreads = useMemo(
-    () => relatedThreadsList.length > 0 ? relatedThreadsList : fallbackRelatedThreads,
+    () =>
+      relatedThreadsList.length > 0
+        ? relatedThreadsList
+        : fallbackRelatedThreads,
     [relatedThreadsList, fallbackRelatedThreads],
   );
 
@@ -482,23 +491,25 @@ export default function ThreadDetailPage() {
           </section>
 
           <aside className="space-y-3 lg:sticky lg:top-19.5">
-            <section className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
-              <div className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
-                <Icon icon={Users} className="h-4 w-4" />
-                Alumni yang Menjawab
-              </div>
+            {contributors && contributors.length > 0 && (
+              <section className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
+                <div className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
+                  <Icon icon={Users} className="h-4 w-4" />
+                  Alumni yang Menjawab
+                </div>
 
-              <div className="space-y-3.5">
-                {contributors.map((contributor, idx) => (
-                  <div key={contributor.id}>
-                    <ContributorCard contributor={contributor} />
-                    {idx < contributors.length - 1 ? (
-                      <div className="mt-3.5 border-t border-[#e5e7eb]" />
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </section>
+                <div className="space-y-3.5">
+                  {contributors.map((contributor, idx) => (
+                    <div key={contributor.id}>
+                      <ContributorCard contributor={contributor} />
+                      {idx < contributors.length - 1 ? (
+                        <div className="mt-3.5 border-t border-[#e5e7eb]" />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="rounded-[14px] border border-[rgba(206,208,249,0.5)] bg-white p-4.5 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
               <div className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-(--color-dark)">
@@ -551,7 +562,8 @@ export default function ThreadDetailPage() {
                     typeof thread === "string"
                       ? "#"
                       : `/thread/${thread?.id || ""}`;
-                  const isExternalLink = typeof thread !== "string" && thread?.id;
+                  const isExternalLink =
+                    typeof thread !== "string" && thread?.id;
 
                   return (
                     <li key={threadKey}>
