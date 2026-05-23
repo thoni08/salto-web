@@ -389,6 +389,10 @@ export function mapApiThreadDetail(thread, fallback = {}) {
   };
 }
 
+export async function registerUser(payload) {
+  return apiClient.post("/api/register", payload);
+}
+
 export async function loginUser({ email, password }) {
   return apiClient.post("/api/login", { email, password });
 }
