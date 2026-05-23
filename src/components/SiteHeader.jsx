@@ -1,13 +1,30 @@
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { clearAuthSession, getAuthUser } from "../services/authStorage.js";
+import {
+  clearAuthSession,
+  getAuthToken,
+  getAuthUser,
+} from "../services/authStorage.js";
 
 const defaultNavItems = [
   { label: "Beranda", href: "/" },
   { label: "Diskusi", href: "/thread" },
   { label: "Live", href: "/live" },
 ];
+
+function getAvatarUrl(user) {
+  const source = user?.data || user?.user || user || {};
+
+  return (
+    source.avatar ||
+    source.Avatar ||
+    source.photoUrl ||
+    source.profileImage ||
+    source.image ||
+    ""
+  );
+}
 
 export function SiteHeader({
   activeHref,
@@ -19,10 +36,48 @@ export function SiteHeader({
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sessionUser, setSessionUser] = useState(() => user ?? getAuthUser());
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
 
   useEffect(() => {
-    const syncSessionUser = () => {
-      setSessionUser(getAuthUser());
+    let isMounted = true;
+
+    const syncSessionUser = async () => {
+      const storedUser = getAuthUser();
+      const token = getAuthToken();
+
+      if (!token) {
+        if (isMounted) {
+          setSessionUser(storedUser);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch("https://salto-be.aauaah.tech/api/user/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal memuat data profil");
+        }
+
+        const result = await response.json();
+        if (isMounted) {
+          setSessionUser({
+            ...(storedUser || {}),
+            avatar: getAvatarUrl({
+              ...(storedUser || {}),
+              ...(result?.data || {}),
+            }),
+          });
+        }
+      } catch {
+        if (isMounted) {
+          setSessionUser(storedUser);
+        }
+      }
     };
 
     const handleVisibilityChange = () => {
@@ -36,6 +91,7 @@ export function SiteHeader({
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      isMounted = false;
       window.removeEventListener("storage", syncSessionUser);
       window.removeEventListener("focus", syncSessionUser);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -49,23 +105,12 @@ export function SiteHeader({
     navigate("/");
   };
 
-  const activeUser = sessionUser;
+  const avatarSrc = getAvatarUrl(sessionUser);
+  const hasSession = Boolean(sessionUser || getAuthToken());
 
-  const displayName =
-    activeUser?.fullName ||
-    activeUser?.name ||
-    activeUser?.userName ||
-    activeUser?.username ||
-    "Profil";
-
-  const userInitials = activeUser
-    ? displayName
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join("")
-        .toUpperCase()
-    : "";
+  useEffect(() => {
+    setAvatarLoaded(false);
+  }, [avatarSrc]);
 
   return (
     <header
@@ -110,30 +155,42 @@ export function SiteHeader({
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          {activeUser ? (
+          {hasSession ? (
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="inline-flex items-center gap-2 rounded-full border border-(--color-dark) px-3 py-2 text-[14px] leading-4.5 transition hover:bg-(--color-dark) hover:text-white">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-(--color-dark) text-[12px] font-bold text-white">
-                  {userInitials}
-                </div>
-                <span className="max-w-[120px] truncate text-(--color-dark)">
-                  {displayName}
-                </span>
+                aria-label="Buka menu profil"
+                className="inline-flex items-center transition">
+                {avatarSrc ? (
+                  <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
+                    {!avatarLoaded && (
+                      <div className="absolute inset-0 animate-pulse rounded-full bg-(--color-gray)" />
+                    )}
+                    <img
+                      src={avatarSrc}
+                      alt="Profil pengguna"
+                      onLoad={() => setAvatarLoaded(true)}
+                      onError={() => setAvatarLoaded(true)}
+                      className={`h-8 w-8 rounded-full object-cover transition-opacity ${
+                        avatarLoaded ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--color-gray) text-(--color-dark)">
+                    <User className="h-4 w-4" />
+                  </div>
+                )}
               </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-(--color-gray) bg-white shadow-lg">
-                  <div className="border-b border-(--color-gray) px-4 py-3">
-                    <p className="text-[12px] text-(--color-secondary)">Login sebagai</p>
-                    <p className="text-[14px] font-bold text-(--color-dark)">
-                      {displayName}
-                    </p>
-                    <p className="text-[12px] text-(--color-secondary)">
-                      {activeUser.email}
-                    </p>
-                  </div>
+                <div className="absolute right-0 top-full mt-2 w-40 rounded-lg bg-white shadow-lg overflow-hidden">
+                  <Link
+                    to="/profile"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex w-full items-center px-4 py-3 text-[14px] text-(--color-dark) transition hover:bg-[#f8fafc]">
+                    Lihat Profil
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex w-full items-center gap-2 px-4 py-3 text-[14px] text-red-600 transition hover:bg-red-50">

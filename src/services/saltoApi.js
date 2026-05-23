@@ -407,6 +407,22 @@ export async function fetchUsers({ token, page = 1, limit = 10, search = "" }) {
   return apiClient.get("/api/users", { params, headers });
 }
 
+export async function updateUserProfile(profile, userId = "") {
+  const path = userId ? `/api/user/${userId}` : "/api/user";
+
+  // If profile is FormData, send multipart request
+  if (typeof FormData !== "undefined" && profile instanceof FormData) {
+    return apiClient.request({
+      url: path,
+      method: "patch",
+      data: profile,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  return apiClient.patch(path, profile);
+}
+
 export async function fetchThreads({
   page = 1,
   limit = 100,

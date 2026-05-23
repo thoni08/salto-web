@@ -9,6 +9,8 @@ import "./index.css";
 import CreateThreadPage from "./pages/CreateThreadPage.jsx";
 import LiveDiskusiPage from "./pages/LiveDiskusiPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
+import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import ThreadDetailPage from "./pages/ThreadDetailPage.jsx";
 import ThreadPage from "./pages/ThreadPage.jsx";
@@ -31,6 +33,8 @@ createRoot(document.getElementById("root")).render(
             <Route path="/thread/create" element={<CreateThreadPage />} />
             <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
             <Route path="/thread-detail" element={<ThreadDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<ProfileEditPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
