@@ -5,7 +5,6 @@ import App from "../App";
 import LoginPage from "../pages/LoginPage";
 import ThreadPage from "../pages/ThreadPage";
 import ThreadDetailPage from "../pages/ThreadDetailPage";
-import UsersPage from "../pages/UsersPage";
 
 vi.mock("../services/saltoApi.js", async (importOriginal) => {
   const actual = await importOriginal();
@@ -46,7 +45,7 @@ function renderRoutes(initialEntries = ["/login"]) {
     <MemoryRouter initialEntries={initialEntries}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/users" element={<UsersPage />} />
+        {/* Users page removed; followers handled from profile modal */}
         <Route path="/" element={<App />} />
         <Route path="/thread" element={<ThreadPage />} />
         <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
