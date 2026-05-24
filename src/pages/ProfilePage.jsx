@@ -2,7 +2,6 @@ import {
   Briefcase,
   GraduationCap,
   Link2,
-  Mail,
   Share2,
   Users,
 } from "lucide-react";
@@ -285,7 +284,7 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
           <div className="mb-4 flex items-center gap-4">
             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-(--color-gray) flex items-center justify-center">
               {previewSrc && !previewLoading && !previewError ? (
-                <img src={previewSrc} alt="avatar preview" className="h-20 w-20 object-cover" />
+                <img src={previewSrc} alt="avatar preview" className="h-20 w-20 object-contain" />
               ) : previewLoading ? (
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-(--color-dark)" />
               ) : (
@@ -559,6 +558,16 @@ export default function ProfilePage() {
 
   const avatarSrc = profileData?.avatar || "";
 
+  // avatar viewer modal
+  const [isAvatarOpen, setIsAvatarOpen] = useState(false);
+  const [viewAvatarSrc, setViewAvatarSrc] = useState(avatarSrc || "");
+  const openAvatar = (src) => {
+    if (!src) return;
+    setViewAvatarSrc(src);
+    setIsAvatarOpen(true);
+  };
+  const closeAvatar = () => setIsAvatarOpen(false);
+
   const isStudentProfile = Boolean(profileData?.isStudent || displayRole === "Student");
   const isAlumniProfile = Boolean(profileData?.isAlumni || displayRole === "Alumni");
 
@@ -584,6 +593,21 @@ export default function ProfilePage() {
           profileData?.isPhd ? "PhD" : null,
         ].filter(Boolean)
       : [];
+
+  const followerCount = profileData?.followersCount ?? (profileData?.followers?.length ?? 0);
+  const followingCount = profileData?.followingCount ?? (profileData?.following?.length ?? 0);
+  const joinDateLabel = profileData?.createdAt
+    ? new Date(profileData.createdAt).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "-";
+
+  const cardRevealStyle = (index) => ({
+    animation: "profileCardReveal 520ms cubic-bezier(0.22,1,0.36,1) both",
+    animationDelay: `${90 + index * 70}ms`,
+  });
 
   if (isLoading) {
     return (
@@ -618,20 +642,24 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader />
 
-      <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-6 lg:px-0">
-        {/* Header dengan Avatar dan Info Dasar */}
-        <section className="px-8 py-6">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-6">
+      <main className="mx-auto w-full max-w-7xl px-4 pb-12 pt-10 xl:px-0">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
+          {/* Sidebar Kiri (Header Info) */}
+          <aside className="w-full shrink-0 md:w-70 lg:w-74 space-y-5">
             {/* Avatar */}
-            <div className="shrink-0">
+            <div className="relative">
               {avatarSrc ? (
-                <img
-                  src={avatarSrc}
-                  alt={displayName}
-                  className="h-32 w-32 rounded-full object-cover"
-                />
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openAvatar(avatarSrc)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openAvatar(avatarSrc); }}
+                  className="cursor-pointer mx-auto aspect-square w-full max-w-70 lg:max-w-74 rounded-full border border-[#dbe2f1] bg-white shadow-sm overflow-hidden p-2 flex items-center justify-center transition duration-200 hover:scale-[1.015] hover:shadow-[0_14px_34px_-26px_rgba(37,52,63,0.55)]"
+                >
+                  <img src={avatarSrc} alt={displayName} className="max-h-full max-w-full object-contain" />
+                </div>
               ) : (
-                <div className="flex h-32 w-32 items-center justify-center rounded-full text-[36px] font-black text-(--color-dark)">
+                <div className="mx-auto flex aspect-square w-full max-w-70 lg:max-w-74 items-center justify-center rounded-full border border-[#dbe2f1] bg-white text-[64px] font-black text-(--color-secondary) shadow-sm">
                   {displayName
                     .split(/\s+/)
                     .slice(0, 2)
@@ -643,206 +671,254 @@ export default function ProfilePage() {
             </div>
 
             {/* Info Dasar */}
-            <div className="flex-1">
-              <h1 className="text-[32px] leading-10 font-extrabold text-(--color-dark)">
+            <div className="space-y-1 pt-2">
+              <h1 className="text-[26px] leading-[1.2] font-extrabold text-(--color-dark)">
                 {displayName}
               </h1>
-              <p className="mt-1 text-[16px] text-(--color-secondary)">
+              <p className="text-[20px] font-light leading-snug text-(--color-secondary)">
                 @{profileData.userName}
               </p>
+            </div>
 
-              <div className="mt-4 text-[13px] font-semibold text-(--color-secondary)">
+            <div className="space-y-4">
+              <div className="text-[14px] font-semibold text-(--color-secondary)">
                 {displayRole}
               </div>
 
+              <div className="mt-2 text-[13px] text-(--color-secondary)">
+                {profileData.email && (
+                  <div className="truncate">{profileData.email}</div>
+                )}
+
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="text-[13px] text-(--color-secondary)">
+                    {followerCount} pengikut
+                  </span>
+
+                  <span className="text-[13px] text-(--color-secondary)">·</span>
+
+                  <span className="text-[13px] text-(--color-secondary)">
+                    {followingCount} mengikuti
+                  </span>
+                </div>
+              </div>
+
               {profileSummary.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2 text-[13px] text-(--color-secondary)">
+                <div className="flex flex-col gap-2 text-[13px] text-(--color-secondary)">
                   {profileSummary.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full border border-(--color-light-blue) bg-white px-3 py-1">
+                      className="inline-flex items-center gap-2 rounded-full border border-(--color-light-blue) bg-white px-3 py-1.5 w-max">
                       {item}
                     </span>
                   ))}
                 </div>
               )}
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button onClick={handleOpenEdit} className="rounded-full bg-[#25343f] px-6 py-2 text-[14px] font-semibold text-white transition hover:bg-[#1f2c35]">
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  onClick={handleOpenEdit}
+                  className="rounded-full bg-[#25343f] px-5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#1f2c35]"
+                >
                   Edit Profil
                 </button>
-                <button className="rounded-full border border-(--color-gray) px-6 py-2 text-[14px] font-semibold text-(--color-dark) transition hover:bg-(--color-gray)" onClick={() => {
-                  try {
-                    navigator.clipboard.writeText(window.location.href);
-                  } catch { /* ignore */ }
-                }}>
+                <button
+                  onClick={() => {
+                    try {
+                      navigator.clipboard.writeText(window.location.href);
+                    } catch { /* ignore */ }
+                  }}
+                  className="rounded-full border border-(--color-gray) px-4 py-2 text-[14px] font-semibold text-(--color-dark) transition hover:bg-[#e2e8f0]"
+                >
                   Salin Link Profil
                 </button>
               </div>
             </div>
-          </div>
-        </section>
+          </aside>
 
-        {isEditing && (
-          <ProfileEditModal
-            profile={profileData}
-            onClose={handleCloseEdit}
-            onSave={handleSaveProfile}
-          />
-        )}
+          {/* Konten Utama Kanan */}
+          <div className="min-w-0 flex-1 rounded-3xl bg-[linear-gradient(180deg,rgba(119,131,212,0.09),rgba(119,131,212,0)_35%)] p-2">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
+              <section className="space-y-6">
+                {/* Pendidikan */}
+                {school && (
+                  <article style={cardRevealStyle(0)} className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)] transition duration-200 hover:shadow-[0_16px_28px_-24px_rgba(37,52,63,0.5)]">
+                    <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
+                      <span className="h-5 w-1.5 rounded-full bg-(--color-like-blue)" />
+                      <Icon
+                        icon={GraduationCap}
+                        className="h-6 w-6 text-(--color-like-blue)"
+                      />
+                      <h2 className="text-[18px] font-bold text-(--color-dark)">
+                        Pendidikan
+                      </h2>
+                    </div>
 
-        {/* Grid Konten */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="space-y-6">
-            {/* Pendidikan */}
-            {school && (
-              <article className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
-                <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
-                  <Icon
-                    icon={GraduationCap}
-                    className="h-6 w-6 text-(--color-like-blue)"
-                  />
-                  <h2 className="text-[18px] font-bold text-(--color-dark)">
-                    Pendidikan
-                  </h2>
-                </div>
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <p className="text-[16px] font-bold text-(--color-dark)">
+                          {school.degree} - {school.major}
+                        </p>
+                        <p className="mt-1 text-[14px] text-(--color-secondary)">
+                          {school.campusName}
+                        </p>
+                        <p className="mt-2 text-[13px] text-(--color-secondary)">
+                          Masuk: {new Date(school.intakeDate).getFullYear()} ·
+                          Lulus: {school.graduateDate}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                )}
 
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <p className="text-[16px] font-bold text-(--color-dark)">
-                      {school.degree} - {school.major}
-                    </p>
-                    <p className="mt-1 text-[14px] text-(--color-secondary)">
-                      {school.campusName}
-                    </p>
-                    <p className="mt-2 text-[13px] text-(--color-secondary)">
-                      Masuk: {new Date(school.intakeDate).getFullYear()} ·
-                      Lulus: {school.graduateDate}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            )}
+                {/* Pekerjaan */}
+                {work && (
+                  <article style={cardRevealStyle(1)} className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)] transition duration-200 hover:shadow-[0_16px_28px_-24px_rgba(37,52,63,0.5)]">
+                    <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
+                      <span className="h-5 w-1.5 rounded-full bg-(--color-like-blue)" />
+                      <Icon
+                        icon={Briefcase}
+                        className="h-6 w-6 text-(--color-like-blue)"
+                      />
+                      <h2 className="text-[18px] font-bold text-(--color-dark)">
+                        Pengalaman Kerja
+                      </h2>
+                    </div>
 
-            {/* Pekerjaan */}
-            {work && (
-              <article className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
-                <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
-                  <Icon
-                    icon={Briefcase}
-                    className="h-6 w-6 text-(--color-like-blue)"
-                  />
-                  <h2 className="text-[18px] font-bold text-(--color-dark)">
-                    Pengalaman Kerja
-                  </h2>
-                </div>
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <p className="text-[16px] font-bold text-(--color-dark)">
+                          {work.workPlace}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
+                          <span className="text-[13px] text-(--color-secondary)">
+                            {work.fromYear} - {work.toYear || "Sekarang"}
+                          </span>
+                          {work.isMentor && (
+                            <span className="inline-flex items-center rounded-full bg-[#dcfce7] px-2 py-0.5 text-[12px] font-semibold text-[#15803d]">
+                              Mentor
+                            </span>
+                          )}
+                          {work.isPhd && (
+                            <span className="inline-flex items-center rounded-full bg-[#f3e8ff] px-2 py-0.5 text-[12px] font-semibold text-[#7e22ce]">
+                              PhD
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                )}
 
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <p className="text-[16px] font-bold text-(--color-dark)">
-                      {work.workPlace}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-3">
-                      <span className="text-[13px] text-(--color-secondary)">
-                        {work.fromYear} - {work.toYear || "Sekarang"}
-                      </span>
-                      {work.isMentor && (
-                        <span className="inline-flex items-center rounded-full bg-[#dcfce7] px-2 py-0.5 text-[12px] font-semibold text-[#15803d]">
-                          Mentor
-                        </span>
-                      )}
-                      {work.isPhd && (
-                        <span className="inline-flex items-center rounded-full bg-[#f3e8ff] px-2 py-0.5 text-[12px] font-semibold text-[#7e22ce]">
-                          PhD
-                        </span>
-                      )}
+                {profileData.campuses?.length > 0 && isAlumniProfile && (
+                  <article style={cardRevealStyle(2)} className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)] transition duration-200 hover:shadow-[0_16px_28px_-24px_rgba(37,52,63,0.5)]">
+                    <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
+                      <span className="h-5 w-1.5 rounded-full bg-(--color-like-blue)" />
+                      <Icon icon={GraduationCap} className="h-6 w-6 text-(--color-like-blue)" />
+                      <h2 className="text-[18px] font-bold text-(--color-dark)">
+                        Kampus
+                      </h2>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-[14px] text-(--color-secondary)">
+                      {profileData.campuses.map((campus) => (
+                        <p key={campus}>{campus}</p>
+                      ))}
+                    </div>
+                  </article>
+                )}
+
+                {profileData.workplaces?.length > 0 && isAlumniProfile && (
+                  <article style={cardRevealStyle(3)} className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)] transition duration-200 hover:shadow-[0_16px_28px_-24px_rgba(37,52,63,0.5)]">
+                    <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
+                      <span className="h-5 w-1.5 rounded-full bg-(--color-like-blue)" />
+                      <Icon icon={Briefcase} className="h-6 w-6 text-(--color-like-blue)" />
+                      <h2 className="text-[18px] font-bold text-(--color-dark)">
+                        Tempat Kerja
+                      </h2>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-[14px] text-(--color-secondary)">
+                      {profileData.workplaces.map((workplace) => (
+                        <p key={workplace}>{workplace}</p>
+                      ))}
+                    </div>
+                  </article>
+                )}
+              </section>
+
+              {/* Sidebar Info/Bagikan Kanan */}
+              <aside className="space-y-6 lg:sticky lg:top-19.5">
+                {/* Tentang Profil */}
+                <section style={cardRevealStyle(4)} className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)] transition duration-200 hover:shadow-[0_14px_24px_-22px_rgba(37,52,63,0.5)]">
+                  <h3 className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
+                    <span className="h-4 w-1.5 rounded-full bg-(--color-like-blue)" />
+                    <Icon icon={Users} className="h-4 w-4" />
+                    Info Profil
+                  </h3>
+                  <div className="space-y-3 text-[13px] text-(--color-secondary)">
+                    <div>
+                      <p className="font-semibold text-(--color-dark)">Bergabung</p>
+                      <p>{joinDateLabel}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-(--color-dark)">
+                        ID Pengguna
+                      </p>
+                      <p className="truncate font-mono text-[12px]">
+                        {profileData.id || "-"}
+                      </p>
                     </div>
                   </div>
-                </div>
-              </article>
-            )}
+                </section>
 
-            {profileData.campuses?.length > 0 && isAlumniProfile && (
-              <article className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
-                <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
-                  <Icon icon={GraduationCap} className="h-6 w-6 text-(--color-like-blue)" />
-                  <h2 className="text-[18px] font-bold text-(--color-dark)">
-                    Kampus
-                  </h2>
-                </div>
-
-                <div className="mt-4 space-y-2 text-[14px] text-(--color-secondary)">
-                  {profileData.campuses.map((campus) => (
-                    <p key={campus}>{campus}</p>
-                  ))}
-                </div>
-              </article>
-            )}
-
-            {profileData.workplaces?.length > 0 && isAlumniProfile && (
-              <article className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
-                <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
-                  <Icon icon={Briefcase} className="h-6 w-6 text-(--color-like-blue)" />
-                  <h2 className="text-[18px] font-bold text-(--color-dark)">
-                    Tempat Kerja
-                  </h2>
-                </div>
-
-                <div className="mt-4 space-y-2 text-[14px] text-(--color-secondary)">
-                  {profileData.workplaces.map((workplace) => (
-                    <p key={workplace}>{workplace}</p>
-                  ))}
-                </div>
-              </article>
-            )}
-          </section>
-
-          {/* Sidebar */}
-          <aside className="space-y-6 lg:sticky lg:top-19.5">
-            {/* Tentang Profil */}
-            <section className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
-              <h3 className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
-                <Icon icon={Users} className="h-4 w-4" />
-                Info Profil
-              </h3>
-              <div className="space-y-3 text-[13px] text-(--color-secondary)">
-                <div>
-                  <p className="font-semibold text-(--color-dark)">Bergabung</p>
-                  <p>
-                    {profileData.createdAt
-                      ? new Date(profileData.createdAt).toLocaleDateString("id-ID")
-                      : "-"}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-(--color-dark)">
-                    ID Pengguna
-                  </p>
-                  <p className="truncate font-mono text-[12px]">
-                    {profileData.id || "-"}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Bagikan */}
-            <section className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
-              <h3 className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
-                <Icon icon={Share2} className="h-4 w-4" />
-                Bagikan
-              </h3>
-              <div className="space-y-2">
-                <button className="w-full rounded-lg border border-(--color-gray) bg-white px-3 py-2 text-[13px] font-medium text-(--color-dark) transition hover:bg-(--color-gray)">
-                  Copy Link
-                </button>
-                <button className="w-full rounded-lg bg-(--color-dark) px-3 py-2 text-[13px] font-medium text-white transition hover:bg-[#1f2c35]">
-                  Share
-                </button>
-              </div>
-            </section>
-          </aside>
+                {/* Bagikan */}
+                <section style={cardRevealStyle(5)} className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)] transition duration-200 hover:shadow-[0_14px_24px_-22px_rgba(37,52,63,0.5)]">
+                  <h3 className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
+                    <span className="h-4 w-1.5 rounded-full bg-(--color-like-blue)" />
+                    <Icon icon={Share2} className="h-4 w-4" />
+                    Bagikan
+                  </h3>
+                  <div className="space-y-2">
+                    <button className="w-full rounded-lg border border-(--color-gray) bg-white px-3 py-2 text-[13px] font-medium text-(--color-dark) transition hover:bg-(--color-gray)">
+                      Copy Link
+                    </button>
+                    <button className="w-full rounded-lg bg-(--color-dark) px-3 py-2 text-[13px] font-medium text-white transition hover:bg-[#1f2c35]">
+                      Share
+                    </button>
+                  </div>
+                </section>
+              </aside>
+            </div>
+          </div>
         </div>
       </main>
+
+      {isEditing && (
+        <ProfileEditModal
+          profile={profileData}
+          onClose={handleCloseEdit}
+          onSave={handleSaveProfile}
+        />
+      )}
+
+      {/* Avatar viewer modal */}
+      {isAvatarOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4">
+          <div className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-lg bg-white p-4">
+            <button
+              onClick={closeAvatar}
+              className="absolute right-3 top-3 rounded-full bg-[#f3f4f6] p-2 text-(--color-dark)"
+            >
+              ✕
+            </button>
+            <div className="flex items-center justify-center">
+              <img src={viewAvatarSrc} alt={displayName} className="max-h-[80vh] max-w-[80vw] object-contain" />
+            </div>
+            <div className="mt-3 text-center text-[13px] text-(--color-secondary)">{displayName}</div>
+          </div>
+        </div>
+      )}
 
       <FooterSection socialLinks={socialLinks} />
     </div>

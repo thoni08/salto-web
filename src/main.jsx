@@ -14,7 +14,6 @@ import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import ThreadDetailPage from "./pages/ThreadDetailPage.jsx";
 import ThreadPage from "./pages/ThreadPage.jsx";
-import UsersPage from "./pages/UsersPage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -23,7 +22,7 @@ createRoot(document.getElementById("root")).render(
         <ScrollToTop />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/users" element={<UsersPage />} />
+          {/* /users page removed — followers/following handled in-profile modal */}
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/live" element={<LiveDiskusiPage />} />
           <Route path="/live-diskusi" element={<LiveDiskusiPage />} />
