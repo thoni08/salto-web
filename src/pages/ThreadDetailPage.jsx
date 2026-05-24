@@ -14,7 +14,7 @@ import {
   Share2,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
@@ -40,6 +40,7 @@ import {
   unfollowUser,
   unsaveThread,
 } from "../services/saltoApi.js";
+import { stripInlineMarkdown } from "../utils/formatText.js";
 import { showToast } from "../utils/toast.js";
 import {
   AnswerCard,
@@ -165,6 +166,7 @@ export default function ThreadDetailPage() {
   const [threadLoadError, setThreadLoadError] = useState("");
   const [relatedThreadsList, setRelatedThreadsList] = useState([]);
   const [followStatusByUserId, setFollowStatusByUserId] = useState({});
+  const followStatusRef = useRef(followStatusByUserId);
   const [answerDraft, setAnswerDraft] = useState("");
   const [threadComments, setThreadComments] = useState(null);
   const [isThreadSaved, setIsThreadSaved] = useState(false);
@@ -175,6 +177,10 @@ export default function ThreadDetailPage() {
     normalizeAuthUser(getAuthUser()),
   );
   const [didHydrateAuthUser, setDidHydrateAuthUser] = useState(false);
+
+  useEffect(() => {
+    followStatusRef.current = followStatusByUserId;
+  }, [followStatusByUserId]);
 
   useEffect(() => {
     const handleStorage = () => setAuthUser(normalizeAuthUser(getAuthUser()));
@@ -321,7 +327,7 @@ export default function ThreadDetailPage() {
       .replace(",", " ·");
   }
 
-  function mapApiReplyToUi(reply) {
+  const mapApiReplyToUi = useCallback((reply) => {
     const author = reply?.author || {};
     const role = String(author?.role || "");
 
@@ -329,39 +335,42 @@ export default function ThreadDetailPage() {
       id: String(reply?.id || `reply-${Date.now()}`),
       author: String(author?.fullName || author?.userName || "Pengguna"),
       role: role || "Member",
-      text: String(reply?.content || reply?.text || "").trim(),
+      text: stripInlineMarkdown(reply?.content || reply?.text),
       createdAt: reply?.createdAt
         ? formatCommentCreatedAt(reply.createdAt)
         : "-",
       likes: Number(reply?.stats?.likes ?? reply?.likes ?? 0) || 0,
     };
-  }
+  }, []);
 
-  function mapApiCommentToUi(comment) {
-    const author = comment?.author || {};
-    const role = String(author?.role || "");
-    const replies = Array.isArray(comment?.replies)
-      ? comment.replies.map(mapApiReplyToUi)
-      : [];
+  const mapApiCommentToUi = useCallback(
+    (comment) => {
+      const author = comment?.author || {};
+      const role = String(author?.role || "");
+      const replies = Array.isArray(comment?.replies)
+        ? comment.replies.map(mapApiReplyToUi)
+        : [];
 
-    return {
-      id: String(comment?.id || `comment-${Date.now()}`),
-      authorId: String(comment?.authorId || author?.id || ""),
-      author: String(author?.fullName || author?.userName || "Anonim"),
-      authorRole: role,
-      accent: Boolean(comment?.isBestAnswer),
-      isBestAnswer: Boolean(comment?.isBestAnswer),
-      subtitle: String(author?.field || ""),
-      createdAt: comment?.createdAt
-        ? formatCommentCreatedAt(comment.createdAt)
-        : "-",
-      badges: [],
-      likes: Number(comment?.stats?.likes ?? 0) || 0,
-      currentUserLiked: Boolean(comment?.currentUserLiked),
-      paragraphs: [String(comment?.content || "").trim()].filter(Boolean),
-      replies,
-    };
-  }
+      return {
+        id: String(comment?.id || `comment-${Date.now()}`),
+        authorId: String(comment?.authorId || author?.id || ""),
+        author: String(author?.fullName || author?.userName || "Anonim"),
+        authorRole: role,
+        accent: Boolean(comment?.isBestAnswer),
+        isBestAnswer: Boolean(comment?.isBestAnswer),
+        subtitle: String(author?.field || ""),
+        createdAt: comment?.createdAt
+          ? formatCommentCreatedAt(comment.createdAt)
+          : "-",
+        badges: [],
+        likes: Number(comment?.stats?.likes ?? 0) || 0,
+        currentUserLiked: Boolean(comment?.currentUserLiked),
+        paragraphs: [stripInlineMarkdown(comment?.content)].filter(Boolean),
+        replies,
+      };
+    },
+    [mapApiReplyToUi],
+  );
 
   useEffect(() => {
     let active = true;
@@ -388,7 +397,7 @@ export default function ThreadDetailPage() {
     return () => {
       active = false;
     };
-  }, [threadId]);
+  }, [mapApiCommentToUi, threadId]);
 
   useEffect(() => {
     let active = true;
@@ -405,7 +414,7 @@ export default function ThreadDetailPage() {
 
       const uniqueTargets = [...new Set(targets)];
       const missingTargets = uniqueTargets.filter((userId) => {
-        const entry = followStatusByUserId[userId];
+        const entry = followStatusRef.current[userId];
         return entry == null;
       });
 
@@ -584,7 +593,7 @@ export default function ThreadDetailPage() {
           createdAt: comment?.createdAt || new Date().toISOString(),
           badges: [],
           likes: 0,
-          paragraphs: [String(comment?.content || content).trim()],
+          paragraphs: [stripInlineMarkdown(comment?.content || content)],
           replies: [],
         },
         message: payload?.message || "Jawaban berhasil dikirim.",
@@ -642,9 +651,7 @@ export default function ThreadDetailPage() {
         author?.fullName || author?.userName || viewerProfile.name || "Kamu",
       ),
       role: String(author?.role || viewerProfile.role || "Member"),
-      text: String(
-        source?.content || source?.text || fallbackText || "",
-      ).trim(),
+      text: stripInlineMarkdown(source?.content || source?.text || fallbackText),
       createdAt: String(source?.createdAt || "").trim() || "-",
       likes: 0,
     };
@@ -790,7 +797,7 @@ export default function ThreadDetailPage() {
         }
       />
 
-      <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-3.5 lg:px-0">
+      <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-5 lg:px-0">
         {isThreadLoading ? (
           <div className="mb-3 rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-5 py-3 text-[13px] text-(--color-secondary)">
             Memuat detail thread dari API...
@@ -803,8 +810,8 @@ export default function ThreadDetailPage() {
           </div>
         ) : null}
 
-        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,912px)_320px]">
-          <section className="space-y-3 min-w-0">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,912px)_320px]">
+          <section className="min-w-0 space-y-4">
             <nav className="flex flex-nowrap items-center gap-1.5 overflow-hidden px-1 text-[13px] md:text-[14px] leading-5 text-(--color-secondary)">
               {threadBreadcrumbs.map((item, index) => (
                 <div
@@ -840,7 +847,7 @@ export default function ThreadDetailPage() {
               ))}
             </nav>
 
-            <article className="rounded-2xl border border-(--color-like-blue) bg-white px-8 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)]">
+            <article className="rounded-[14px] border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)] md:px-8">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f3f4f6] pb-4">
                 <div className="flex flex-wrap items-center gap-2 text-[14px] leading-5 text-[#6b7280]">
                   <Link
@@ -856,21 +863,6 @@ export default function ThreadDetailPage() {
                     className={`${buttonFx} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-(--color-secondary) hover:bg-(--color-gray) hover:text-(--color-dark)`}>
                     <Icon icon={Share2} className="h-4 w-4" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleToggleThreadSave}
-                    disabled={isSavingThread}
-                    className={`${buttonFx} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium ${
-                      isThreadSaved
-                        ? "text-(--color-like-blue)"
-                        : "text-(--color-secondary)"
-                    } hover:bg-(--color-gray) hover:text-(--color-dark) disabled:opacity-60`}>
-                    <Icon
-                      icon={isThreadSaved ? BookmarkCheck : Bookmark}
-                      className="h-4 w-4"
-                    />
-                    {isThreadSaved ? "Tersimpan" : "Simpan"}
-                  </button>
                 </div>
               </div>
 
@@ -878,7 +870,7 @@ export default function ThreadDetailPage() {
                 {threadCategoryChips.map((chip) => (
                   <span
                     key={chip.id}
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] leading-4 font-medium ${chip.tone}`}>
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] leading-4 font-semibold ${chip.tone}`}>
                     {chip.label}
                   </span>
                 ))}
@@ -888,11 +880,11 @@ export default function ThreadDetailPage() {
                 </span>
               </div>
 
-              <h1 className="mt-3 text-[26px] leading-[35.75px] font-extrabold text-[#0a2647]">
+              <h1 className="mt-4 max-w-190 text-[28px] leading-9 font-extrabold text-[#0a2647] md:text-[32px] md:leading-10">
                 {threadHeader.title}
               </h1>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Avatar alt={threadHeader.author} />
                 <div>
                   <p className="text-[14px] leading-5 font-bold text-(--color-dark)">
@@ -911,25 +903,42 @@ export default function ThreadDetailPage() {
                 </div>
               </div>
 
-              <div className="mt-4 space-y-3 text-[14px] leading-[22.75px] text-[#374151]">
+              <div className="mt-5 max-w-205 space-y-3 text-[14px] leading-[22.75px] text-[#374151]">
                 {threadIntroParagraphs.map((paragraph) => (
                   <p key={paragraph.slice(0, 40)}>{paragraph}</p>
                 ))}
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-4 text-[12px] leading-4 text-[#9ca3af]">
-                <span className="inline-flex items-center gap-1">
-                  <Icon icon={Eye} className="h-4 w-4" />
-                  {threadHeader.views}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Icon icon={MessageCircle} className="h-4 w-4" />
-                  {answerCountLabel}
-                </span>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#f3f4f6] pt-4 text-[12px] leading-4 text-[#9ca3af]">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="inline-flex items-center gap-1">
+                    <Icon icon={Eye} className="h-4 w-4" />
+                    {threadHeader.views}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon icon={MessageCircle} className="h-4 w-4" />
+                    {answerCountLabel}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleThreadSave}
+                  disabled={isSavingThread}
+                  className={`${buttonFx} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium ${
+                    isThreadSaved
+                      ? "text-(--color-like-blue)"
+                      : "text-(--color-secondary)"
+                  } hover:bg-(--color-gray) hover:text-(--color-dark) disabled:opacity-60`}>
+                  <Icon
+                    icon={isThreadSaved ? BookmarkCheck : Bookmark}
+                    className="h-4 w-4"
+                  />
+                  {isThreadSaved ? "Tersimpan" : "Simpan"}
+                </button>
               </div>
             </article>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--color-light-blue) pb-2 pt-2">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-[16px] leading-6 font-bold text-[#101828]">
                   {answerCountLabel}
@@ -941,7 +950,7 @@ export default function ThreadDetailPage() {
                 ) : null}
               </div>
 
-              <div className="inline-flex items-center rounded-full border border-(--color-gray) bg-white p-1">
+              <div className="inline-flex items-center rounded-full border border-(--color-gray) bg-white p-1 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.04)]">
                 <button
                   type="button"
                   onClick={() =>
@@ -1026,30 +1035,29 @@ export default function ThreadDetailPage() {
               }}
               onRequestAlumniAccess={() => {
                 if (!isAuthenticated) {
-                  showToast("Silakan login untuk mendaftar sebagai alumni.", {
-                    type: "warning",
+                  showToast("Silakan daftar sebagai alumni untuk lanjut.", {
+                    type: "info",
                   });
-                  navigate("/login");
-                  return;
+                } else {
+                  showToast("Lanjutkan pendaftaran alumni.", {
+                    type: "info",
+                  });
                 }
 
-                showToast("Lengkapi data profil untuk pengajuan alumni.", {
-                  type: "info",
-                });
-                navigate("/profile/edit");
+                navigate("/signup?role=alumni");
               }}
             />
           </section>
 
-          <aside className="space-y-3 lg:sticky lg:top-19.5">
+          <aside className="space-y-5 lg:sticky lg:top-19.5">
             {contributors && contributors.length > 0 && (
-              <section className="rounded-[14px] border border-[#f3f4f6] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
+              <section className="rounded-[14px] border border-[#f3f4f6] bg-white p-4.5 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
                 <div className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-[#101828]">
                   <Icon icon={Users} className="h-4 w-4" />
                   Alumni yang Menjawab
                 </div>
 
-                <div className="space-y-3.5">
+                <div className="space-y-3">
                   {contributors.map((contributor, idx) => (
                     <div key={contributor.id}>
                       <ContributorCard
@@ -1065,7 +1073,7 @@ export default function ThreadDetailPage() {
                         onToggleFollow={handleToggleFollow}
                       />
                       {idx < contributors.length - 1 ? (
-                        <div className="mt-3.5 border-t border-[#e5e7eb]" />
+                        <div className="mt-3 border-t border-[#e5e7eb]" />
                       ) : null}
                     </div>
                   ))}
@@ -1104,7 +1112,7 @@ export default function ThreadDetailPage() {
               </div>
             </section>
 
-            <section className="rounded-[14px] border border-[rgba(206,208,249,0.5)] bg-white p-5.25 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
+            <section className="rounded-[14px] border border-[rgba(206,208,249,0.5)] bg-white p-4.5 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
               <div className="mb-3 inline-flex items-center gap-2 text-[14px] leading-5.25 font-bold text-(--color-dark)">
                 <Icon icon={Link2} className="h-4.5 w-4.5" />
                 Thread Terkait

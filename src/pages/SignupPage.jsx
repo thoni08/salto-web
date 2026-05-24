@@ -15,7 +15,7 @@ import {
   Mail,
   UserRound,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthField } from "../components/auth/AuthField.jsx";
 import { AuthShell } from "../components/auth/AuthShell.jsx";
 import { registerUser } from "../services/saltoApi.js";
@@ -106,7 +106,10 @@ function RoleButton({ active, icon, title, description, onClick }) {
 }
 
 export default function SignupPage() {
-  const [role, setRole] = useState("mahasiswa");
+  const [searchParams] = useSearchParams();
+  const initialRoleParam = String(searchParams.get("role") || "").toLowerCase();
+  const initialRole = initialRoleParam === "alumni" ? "alumni" : "mahasiswa";
+  const [role, setRole] = useState(initialRole);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -132,6 +135,7 @@ export default function SignupPage() {
     isMentor: false,
     terms: false,
   });
+
 
   const errors = useMemo(
     () => ({

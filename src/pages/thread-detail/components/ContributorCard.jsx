@@ -23,13 +23,13 @@ export function ContributorCard({
   return (
     <Wrapper
       {...wrapperProps}
-      className={`block rounded-[14px] ${profileHref ? "cursor-pointer hover:bg-[#f9fafb]/60" : ""}`}>
-      <article className="space-y-3.5 p-0.5">
+      className={`block rounded-[12px] ${profileHref ? "cursor-pointer hover:bg-[#f9fafb]/80" : ""}`}>
+      <article className="space-y-3 p-1">
       <div className="flex items-start gap-3">
-        <Avatar alt={safeContributor.name} size="lg" />
+        <Avatar alt={safeContributor.name} />
 
         <div className="min-w-0">
-          <p className="text-[14px] leading-5 font-bold text-[#101828]">
+          <p className="text-[13px] leading-5 font-bold text-[#101828]">
             {safeContributor.name}
           </p>
           <p className="text-[12px] leading-4 text-[#6b7280]">
@@ -47,7 +47,7 @@ export function ContributorCard({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[14px] bg-[#f9fafb]">
+      <div className="overflow-hidden rounded-[10px] bg-[#f9fafb]">
         <div className="grid grid-cols-3 border border-transparent text-center">
           <div className="py-2">
             <p className="text-[13px] leading-[19.5px] font-bold text-[#101828]">
