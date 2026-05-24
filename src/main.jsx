@@ -9,10 +9,16 @@ import "./index.css";
 import CreateThreadPage from "./pages/CreateThreadPage.jsx";
 import LiveDiskusiPage from "./pages/LiveDiskusiPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
+import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import ThreadDetailPage from "./pages/ThreadDetailPage.jsx";
 import ThreadPage from "./pages/ThreadPage.jsx";
-import UsersPage from "./pages/UsersPage.jsx";
+import PrivacyPage from "./pages/PrivacyPage.jsx";
+import CookiesPage from "./pages/CookiesPage.jsx";
+import TermsPage from "./pages/TermsPage.jsx";
+import AccessibilityPage from "./pages/AccessibilityPage.jsx";
+import PublicProfilePage from "./pages/PublicProfilePage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -21,16 +27,23 @@ createRoot(document.getElementById("root")).render(
         <ScrollToTop />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/users" element={<UsersPage />} />
+          {/* /users page removed — followers/following handled in-profile modal */}
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/live" element={<LiveDiskusiPage />} />
           <Route path="/live-diskusi" element={<LiveDiskusiPage />} />
+          <Route path="/u/:userName" element={<PublicProfilePage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<App />} />
             <Route path="/thread" element={<ThreadPage />} />
             <Route path="/thread/create" element={<CreateThreadPage />} />
             <Route path="/thread/:threadId" element={<ThreadDetailPage />} />
             <Route path="/thread-detail" element={<ThreadDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<ProfileEditPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/accessibility" element={<AccessibilityPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

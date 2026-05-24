@@ -389,6 +389,10 @@ export function mapApiThreadDetail(thread, fallback = {}) {
   };
 }
 
+export async function registerUser(payload) {
+  return apiClient.post("/api/register", payload);
+}
+
 export async function loginUser({ email, password }) {
   return apiClient.post("/api/login", { email, password });
 }
@@ -405,6 +409,35 @@ export async function fetchUsers({ token, page = 1, limit = 10, search = "" }) {
 
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   return apiClient.get("/api/users", { params, headers });
+}
+
+export async function fetchUsersBySearchTerm(searchTerm, { page = 1, limit = 10 } = {}) {
+  const params = {
+    page: String(page),
+    limit: String(limit),
+  };
+
+  if (String(searchTerm || "").trim()) {
+    params.searchTerm = String(searchTerm).trim();
+  }
+
+  return apiClient.get("/api/users", { params });
+}
+
+export async function updateUserProfile(profile, userId = "") {
+  const path = userId ? `/api/user/${userId}` : "/api/user";
+
+  // If profile is FormData, send multipart request
+  if (typeof FormData !== "undefined" && profile instanceof FormData) {
+    return apiClient.request({
+      url: path,
+      method: "patch",
+      data: profile,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  return apiClient.patch(path, profile);
 }
 
 export async function fetchThreads({
