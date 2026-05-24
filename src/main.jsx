@@ -18,6 +18,7 @@ import PrivacyPage from "./pages/PrivacyPage.jsx";
 import CookiesPage from "./pages/CookiesPage.jsx";
 import TermsPage from "./pages/TermsPage.jsx";
 import AccessibilityPage from "./pages/AccessibilityPage.jsx";
+import PublicProfilePage from "./pages/PublicProfilePage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -30,6 +31,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/live" element={<LiveDiskusiPage />} />
           <Route path="/live-diskusi" element={<LiveDiskusiPage />} />
+          <Route path="/u/:userName" element={<PublicProfilePage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<App />} />
             <Route path="/thread" element={<ThreadPage />} />

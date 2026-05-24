@@ -411,6 +411,19 @@ export async function fetchUsers({ token, page = 1, limit = 10, search = "" }) {
   return apiClient.get("/api/users", { params, headers });
 }
 
+export async function fetchUsersBySearchTerm(searchTerm, { page = 1, limit = 10 } = {}) {
+  const params = {
+    page: String(page),
+    limit: String(limit),
+  };
+
+  if (String(searchTerm || "").trim()) {
+    params.searchTerm = String(searchTerm).trim();
+  }
+
+  return apiClient.get("/api/users", { params });
+}
+
 export async function updateUserProfile(profile, userId = "") {
   const path = userId ? `/api/user/${userId}` : "/api/user";
 
