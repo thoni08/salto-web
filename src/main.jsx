@@ -14,6 +14,10 @@ import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import ThreadDetailPage from "./pages/ThreadDetailPage.jsx";
 import ThreadPage from "./pages/ThreadPage.jsx";
+import PrivacyPage from "./pages/PrivacyPage.jsx";
+import CookiesPage from "./pages/CookiesPage.jsx";
+import TermsPage from "./pages/TermsPage.jsx";
+import AccessibilityPage from "./pages/AccessibilityPage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -34,6 +38,10 @@ createRoot(document.getElementById("root")).render(
             <Route path="/thread-detail" element={<ThreadDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<ProfileEditPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/accessibility" element={<AccessibilityPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
