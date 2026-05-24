@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAuthToken } from "./authStorage.js";
+import { stripInlineMarkdown } from "../utils/formatText.js";
 
 const DEFAULT_API_BASE_URL = "https://salto-be.aauaah.tech";
 
@@ -112,8 +113,28 @@ function pickBestAnswerCount(participant) {
 function splitParagraphs(content) {
   return String(content || "")
     .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
+    .map((paragraph) => stripInlineMarkdown(paragraph))
     .filter(Boolean);
+}
+
+function formatTagLabel(rawLabel) {
+  const normalized = String(rawLabel || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return "Topik";
+  }
+
+  return normalized
+    .split(" ")
+    .map((word) => {
+      if (!word) return "";
+      if (word.length <= 3) return word.toUpperCase();
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
 }
 
 function makeTagTone(label, index = 0) {
@@ -165,12 +186,13 @@ function buildExcerpt(content) {
   const compactText = String(content || "")
     .replace(/\s+/g, " ")
     .trim();
+  const cleanText = stripInlineMarkdown(compactText);
 
-  if (compactText.length <= 140) {
-    return compactText;
+  if (cleanText.length <= 140) {
+    return cleanText;
   }
 
-  return `${compactText.slice(0, 137).trimEnd()}...`;
+  return `${cleanText.slice(0, 137).trimEnd()}...`;
 }
 
 function buildThreadBadges(thread, index = 0) {
@@ -206,7 +228,7 @@ function buildThreadTags(tags) {
   return tags
     .map((entry, index) => {
       const tag = entry?.tag || entry;
-      const label = String(tag?.name || tag?.label || "Topik").trim();
+      const label = formatTagLabel(tag?.name || tag?.label || "Topik");
 
       return {
         label,

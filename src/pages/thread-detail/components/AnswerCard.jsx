@@ -169,12 +169,24 @@ export function AnswerCard({
 
   return (
     <article
-      className={`rounded-[14px] border bg-white px-7 py-6 shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)] ${
+      className={`overflow-hidden rounded-[14px] border bg-white shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)] ${
         safeAnswer.accent
           ? "border-(--color-primary)"
           : "border-[rgba(206,208,249,0.5)]"
       }`}>
-      <header className="flex items-start justify-between gap-3">
+      {safeAnswer.accent ? (
+        <div className="flex items-center justify-between gap-3 border-b border-[#fde68a] bg-[#fffbeb] px-5 py-3 text-[12px] font-bold text-[#92400e]">
+          <span className="inline-flex items-center gap-2">
+            <Icon icon={Star} className="h-4 w-4" strokeWidth={2} />
+            Jawaban Terbaik
+          </span>
+          <span className="text-[11px] font-medium text-[#b45309]">
+            Dipilih oleh penanya
+          </span>
+        </div>
+      ) : null}
+
+      <header className="flex items-start justify-between gap-3 px-5 pt-5">
         <div className="flex min-w-0 items-start gap-3">
           <Avatar alt={safeAnswer.author} highlighted={safeAnswer.accent} />
 
@@ -255,13 +267,13 @@ export function AnswerCard({
         ) : null}
       </header>
 
-      <div className="mt-4 space-y-3 text-[14px] leading-[22.75px] text-[#374151]">
+      <div className="px-5 pt-4 space-y-3 text-[14px] leading-[22.75px] text-[#374151]">
         {safeAnswer.paragraphs.map((paragraph) => (
           <p key={`${safeAnswer.id}-${paragraph.slice(0, 40)}`}>{paragraph}</p>
         ))}
       </div>
 
-      <div className="mt-5 border-t border-[#e5e7eb] pt-3.5">
+      <div className="mx-5 mt-5 border-t border-[#e5e7eb] pb-5 pt-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
             <button

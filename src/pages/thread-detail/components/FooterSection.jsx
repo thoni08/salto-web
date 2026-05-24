@@ -152,7 +152,9 @@ export function FooterSection({ socialLinks }) {
             </h4>
             <ul className="mt-4 space-y-2.5 text-[13px] leading-[19.5px] text-white/85">
               <li>
-                <Link to="/signup" className={availableLinkClassName}>
+                <Link
+                  to="/signup?role=alumni"
+                  className={availableLinkClassName}>
                   Bergabung sebagai Alumni
                 </Link>
               </li>
