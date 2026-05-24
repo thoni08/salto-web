@@ -18,6 +18,10 @@ function normalizeProfileData(rawData) {
   const roleLabel = String(source.role || source.subtitle || "").toLowerCase();
   const isAlumni = roleLabel.includes("alumni") || Boolean(source.isAlumni);
   const isStudent = roleLabel.includes("student") || Boolean(source.isStudent);
+  const schools = Array.isArray(source.schools) ? source.schools : [];
+  const works = Array.isArray(source.works) ? source.works : [];
+  const primarySchool = schools[0] || null;
+  const primaryWork = works[0] || null;
 
   return {
     ...source,
@@ -34,40 +38,20 @@ function normalizeProfileData(rawData) {
       source.image ||
       "",
     field: source.field || source.nim_field || "",
-    major: source.major || "",
-    intakeDate: source.intakeDate || "",
-    campusName: source.campusName || "",
-    degree: source.degree || "",
-    campuses: Array.isArray(source.campuses) ? source.campuses : [],
-    workplaces: Array.isArray(source.workplaces) ? source.workplaces : [],
+    nim: primarySchool?.nim || source.nim || "",
+    campusName: primarySchool?.campusName || source.campusName || "",
+    major: primarySchool?.major || source.major || "",
+    degree: primarySchool?.degree || source.degree || "",
+    intakeDate: primarySchool?.intakeDate || source.intakeDate || "",
+    graduateDate: primarySchool?.graduateDate || source.graduateDate || "",
+    workPlace: primaryWork?.workPlace || source.workPlace || "",
+    fromYear: primaryWork?.fromYear || source.fromYear || "",
+    toYear: primaryWork?.toYear || source.toYear || "",
+    isMentor: Boolean(primaryWork?.isMentor ?? source.isMentor),
+    isPhd: Boolean(primaryWork?.isPhd ?? source.isPhd),
+    schools,
+    works,
   };
-}
-
-function formatDateForInput(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    const text = String(value);
-    return text.length >= 10 ? text.slice(0, 10) : text;
-  }
-
-  return date.toISOString().slice(0, 10);
-}
-
-function listToText(value) {
-  if (!Array.isArray(value) || value.length === 0) {
-    return "";
-  }
-
-  return value.join("\n");
-}
-
-function textToList(value) {
-  return String(value || "")
-    .split(/[\n,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function createProfileFormState(profile) {
@@ -77,13 +61,6 @@ function createProfileFormState(profile) {
     avatar: profile?.avatar || "",
     field: profile?.field || "",
     degree: profile?.degree || "",
-    major: profile?.major || "",
-    campusName: profile?.campusName || "",
-    intakeDate: formatDateForInput(profile?.intakeDate),
-    campuses: listToText(profile?.campuses),
-    workplaces: listToText(profile?.workplaces),
-    isMentor: Boolean(profile?.isMentor),
-    isPhd: Boolean(profile?.isPhd),
   };
 }
 
@@ -94,21 +71,15 @@ function buildProfilePatchPayload(formState) {
   };
 
   // optional fields: only include when present
-  if (formState.avatar && formState.avatar.trim()) payload.avatar = formState.avatar.trim();
+  if (formState.avatar && formState.avatar.trim()) {
+    payload.Avatar = formState.avatar.trim();
+  }
   if (formState.field && formState.field.trim()) {
     payload.field = formState.field.trim();
-    payload.nim_field = formState.field.trim();
   }
-  if (formState.degree && formState.degree.trim()) payload.degree = formState.degree.trim();
-  if (formState.major && formState.major.trim()) payload.major = formState.major.trim();
-  if (formState.campusName && formState.campusName.trim()) payload.campusName = formState.campusName.trim();
-  if (formState.intakeDate) payload.intakeDate = formState.intakeDate;
-  const campuses = textToList(formState.campuses);
-  if (campuses.length > 0) payload.campuses = campuses;
-  const workplaces = textToList(formState.workplaces);
-  if (workplaces.length > 0) payload.workplaces = workplaces;
-  if (formState.isMentor) payload.isMentor = true;
-  if (formState.isPhd) payload.isPhd = true;
+  if (formState.degree && formState.degree.trim()) {
+    payload.degree = formState.degree.trim();
+  }
 
   return payload;
 }
@@ -121,17 +92,11 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
 
   const fullNameRef = useRef(null);
   const userNameRef = useRef(null);
-  const intakeDateRef = useRef(null);
 
   // avatar preview state
   const [previewSrc, setPreviewSrc] = useState(formState.avatar || "");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedObjectUrl, setSelectedObjectUrl] = useState(null);
-
-  const isAlumniProfile = Boolean(profile?.isAlumni || String(profile?.role || "").toLowerCase().includes("alumni"));
-  const isStudentProfile = Boolean(profile?.isStudent || String(profile?.role || "").toLowerCase().includes("student") || !isAlumniProfile);
 
   const handleChange = (field, value) => {
     setFormState((current) => ({
@@ -144,30 +109,6 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
       setPreviewError(false);
     }
   };
-
-  const handleFileChange = (file) => {
-    if (!file) {
-      setSelectedFile(null);
-      if (selectedObjectUrl) {
-        URL.revokeObjectURL(selectedObjectUrl);
-        setSelectedObjectUrl(null);
-      }
-      return;
-    }
-    setSelectedFile(file);
-    const url = URL.createObjectURL(file);
-    setPreviewSrc(url);
-    setSelectedObjectUrl(url);
-    setPreviewError(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (selectedObjectUrl) {
-        URL.revokeObjectURL(selectedObjectUrl);
-      }
-    };
-  }, [selectedObjectUrl]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -182,9 +123,6 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
     if (!formState.userName || !/^[a-zA-Z0-9_.-]{3,30}$/.test(formState.userName)) {
       errors.userName = "Username harus 3-30 karakter (huruf, angka, _, -, .)";
     }
-    if (formState.intakeDate && !/^\d{4}-\d{2}-\d{2}$/.test(formState.intakeDate)) {
-      errors.intakeDate = "Tanggal tidak valid";
-    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -192,26 +130,11 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
       const firstKey = Object.keys(errors)[0];
       if (firstKey === "fullName" && fullNameRef.current) fullNameRef.current.focus();
       else if (firstKey === "userName" && userNameRef.current) userNameRef.current.focus();
-      else if (firstKey === "intakeDate" && intakeDateRef.current) intakeDateRef.current.focus();
       return;
     }
     setValidationErrors({});
 
     try {
-      if (selectedFile) {
-        const fd = new FormData();
-        fd.append("avatar", selectedFile);
-        const payloadObj = buildProfilePatchPayload(formState);
-        Object.keys(payloadObj).forEach((k) => {
-          const v = payloadObj[k];
-          if (v !== undefined && v !== null) fd.append(k, v);
-        });
-        const res = await onSave(fd);
-        // show success
-        showToast("Profil berhasil diperbarui", { type: "success" });
-        return res;
-      }
-
       const res = await onSave(buildProfilePatchPayload(formState));
       showToast("Profil berhasil diperbarui", { type: "success" });
       return res;
@@ -334,16 +257,9 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
                 className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
                 placeholder="https://..."
               />
-              <div className="mt-2 text-[13px] text-(--color-secondary)">atau upload file avatar</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-                className="mt-2"
-              />
-              {selectedFile && (
-                <div className="mt-2 text-[12px] text-(--color-secondary)">{selectedFile.name}</div>
-              )}
+              <div className="mt-2 text-[12px] text-(--color-secondary)">
+                Avatar disimpan sebagai URL pada field <code>Avatar</code> dari backend.
+              </div>
             </label>
           </div>
 
@@ -361,106 +277,61 @@ export function ProfileEditModal({ profile, onClose, onSave }) {
               </label>
 
               <label className="space-y-2">
-                <span className="text-[13px] font-semibold text-(--color-dark)">Tanggal Masuk</span>
+                <span className="text-[13px] font-semibold text-(--color-dark)">Jenjang</span>
                 <input
-                  ref={intakeDateRef}
-                  type="date"
-                  value={formState.intakeDate}
-                  onChange={(event) => handleChange("intakeDate", event.target.value)}
+                  value={formState.degree}
+                  onChange={(event) => handleChange("degree", event.target.value)}
                   className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
+                  placeholder="D3 / D4 / S1 / S2 / S3"
                 />
-                {validationErrors.intakeDate && (
-                  <p className="mt-1 text-[12px] text-red-600">{validationErrors.intakeDate}</p>
-                )}
               </label>
             </div>
           </div>
 
-          {isStudentProfile ? (
-            <div className="mt-6 rounded-[22px] border border-[#eef1f6] bg-white p-4">
-              <p className="text-[13px] font-semibold text-(--color-dark)">Data Mahasiswa</p>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="text-[13px] font-semibold text-(--color-dark)">Jenjang</span>
-                  <input
-                    value={formState.degree}
-                    onChange={(event) => handleChange("degree", event.target.value)}
-                    className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
-                    placeholder="S1 / D3 / ..."
-                  />
-                </label>
+          <div className="mt-6 rounded-[22px] border border-[#eef1f6] bg-white p-4">
+            <p className="text-[13px] font-semibold text-(--color-dark)">
+              Info dari Backend (read-only)
+            </p>
+            <p className="mt-1 text-[12px] text-(--color-secondary)">
+              Data pendidikan/pekerjaan saat ini berasal dari <code>schools</code> dan{" "}
+              <code>works</code>. Jika backend menyediakan endpoint edit khusus, kita bisa aktifkan editnya.
+            </p>
 
-                <label className="space-y-2">
-                  <span className="text-[13px] font-semibold text-(--color-dark)">Jurusan</span>
-                  <input
-                    value={formState.major}
-                    onChange={(event) => handleChange("major", event.target.value)}
-                    className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
-                    placeholder="Teknik Informatika"
-                  />
-                </label>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-[#dbe2f1] bg-[#fafbff] p-4">
+                <p className="text-[13px] font-semibold text-(--color-dark)">Pendidikan</p>
+                {profile?.schools?.length ? (
+                  <div className="mt-2 space-y-1 text-[13px] text-(--color-secondary)">
+                    {profile.schools[0].nim ? <div>NIM: {profile.schools[0].nim}</div> : null}
+                    {profile.schools[0].campusName ? <div>Kampus: {profile.schools[0].campusName}</div> : null}
+                    {profile.schools[0].major ? <div>Prodi/Jurusan: {profile.schools[0].major}</div> : null}
+                    {profile.schools[0].degree ? <div>Jenjang: {profile.schools[0].degree}</div> : null}
+                    {profile.schools[0].intakeDate ? (
+                      <div>Masuk: {new Date(profile.schools[0].intakeDate).getFullYear()}</div>
+                    ) : null}
+                    {profile.schools[0].graduateDate ? <div>Lulus: {profile.schools[0].graduateDate}</div> : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[13px] text-(--color-secondary)">Belum ada data pendidikan.</p>
+                )}
+              </div>
 
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-[13px] font-semibold text-(--color-dark)">Nama Kampus</span>
-                  <input
-                    value={formState.campusName}
-                    onChange={(event) => handleChange("campusName", event.target.value)}
-                    className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
-                    placeholder="Nama kampus"
-                  />
-                </label>
+              <div className="rounded-2xl border border-[#dbe2f1] bg-[#fafbff] p-4">
+                <p className="text-[13px] font-semibold text-(--color-dark)">Pekerjaan</p>
+                {profile?.works?.length ? (
+                  <div className="mt-2 space-y-1 text-[13px] text-(--color-secondary)">
+                    {profile.works[0].workPlace ? <div>Workplace: {profile.works[0].workPlace}</div> : null}
+                    {profile.works[0].fromYear ? <div>Dari: {profile.works[0].fromYear}</div> : null}
+                    {profile.works[0].toYear ? <div>Sampai: {profile.works[0].toYear}</div> : null}
+                    {"isMentor" in profile.works[0] ? <div>Mentor: {profile.works[0].isMentor ? "Ya" : "Tidak"}</div> : null}
+                    {"isPhd" in profile.works[0] ? <div>PhD: {profile.works[0].isPhd ? "Ya" : "Tidak"}</div> : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[13px] text-(--color-secondary)">Belum ada data pekerjaan.</p>
+                )}
               </div>
             </div>
-          ) : null}
-
-          {isAlumniProfile ? (
-            <div className="mt-6 rounded-[22px] border border-[#eef1f6] bg-white p-4">
-              <p className="text-[13px] font-semibold text-(--color-dark)">Data Alumni</p>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-[13px] font-semibold text-(--color-dark)">Kampus (satu baris per item)</span>
-                  <textarea
-                    rows={3}
-                    value={formState.campuses}
-                    onChange={(event) => handleChange("campuses", event.target.value)}
-                    className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
-                    placeholder="Kampus A\nKampus B"
-                  />
-                </label>
-
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-[13px] font-semibold text-(--color-dark)">Tempat Kerja (satu baris per item)</span>
-                  <textarea
-                    rows={3}
-                    value={formState.workplaces}
-                    onChange={(event) => handleChange("workplaces", event.target.value)}
-                    className="w-full rounded-2xl border border-[#dbe2f1] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-(--color-like-blue)"
-                    placeholder="Perusahaan A\nPerusahaan B"
-                  />
-                </label>
-
-                <label className="flex items-center gap-3 rounded-2xl border border-[#dbe2f1] px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={formState.isMentor}
-                    onChange={(event) => handleChange("isMentor", event.target.checked)}
-                    className="h-4 w-4 rounded border-[#cbd5e1]"
-                  />
-                  <span className="text-[13px] font-semibold text-(--color-dark)">Mentor</span>
-                </label>
-
-                <label className="flex items-center gap-3 rounded-2xl border border-[#dbe2f1] px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={formState.isPhd}
-                    onChange={(event) => handleChange("isPhd", event.target.checked)}
-                    className="h-4 w-4 rounded border-[#cbd5e1]"
-                  />
-                  <span className="text-[13px] font-semibold text-(--color-dark)">PhD</span>
-                </label>
-              </div>
-            </div>
-          ) : null}
+          </div>
 
           <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-[#eef1f6] pt-5">
             <button
@@ -557,6 +428,18 @@ export default function ProfilePage() {
   const displayRole = profileData?.role || "Student";
 
   const avatarSrc = profileData?.avatar || "";
+  const publicProfileUrl = profileData?.userName
+    ? `${window.location.origin}/u/${encodeURIComponent(profileData.userName)}`
+    : window.location.href;
+
+  const copyPublicProfileLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicProfileUrl);
+      showToast("Link profil disalin", { type: "success" });
+    } catch {
+      showToast("Gagal menyalin link", { type: "error" });
+    }
+  };
 
   // avatar viewer modal
   const [isAvatarOpen, setIsAvatarOpen] = useState(false);
@@ -572,23 +455,12 @@ export default function ProfilePage() {
   const isAlumniProfile = Boolean(profileData?.isAlumni || displayRole === "Alumni");
 
   const profileSummary = isStudentProfile
-    ? [
-        profileData?.degree && `Jenjang: ${profileData.degree}`,
-        profileData?.major && `Jurusan: ${profileData.major}`,
-        profileData?.campusName && `Kampus: ${profileData.campusName}`,
-        profileData?.intakeDate &&
-          `Masuk: ${new Date(profileData.intakeDate).getFullYear()}`,
-        profileData?.field && `Bidang: ${profileData.field}`,
-      ].filter(Boolean)
+    ? [profileData?.field && `Bidang: ${profileData.field}`].filter(Boolean)
     : isAlumniProfile
       ? [
           profileData?.field && `Bidang: ${profileData.field}`,
-          profileData?.campuses?.length
-            ? `Kampus: ${profileData.campuses.join(", ")}`
-            : null,
-          profileData?.workplaces?.length
-            ? `Tempat kerja: ${profileData.workplaces.join(", ")}`
-            : null,
+          profileData?.campusName ? `Kampus: ${profileData.campusName}` : null,
+          profileData?.workPlace ? `Tempat kerja: ${profileData.workPlace}` : null,
           profileData?.isMentor ? "Mentor" : null,
           profileData?.isPhd ? "PhD" : null,
         ].filter(Boolean)
@@ -646,91 +518,70 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-8 md:flex-row md:items-start">
           {/* Sidebar Kiri (Header Info) */}
           <aside className="w-full shrink-0 md:w-70 lg:w-74 space-y-5">
-            {/* Avatar */}
-            <div className="relative">
-              {avatarSrc ? (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openAvatar(avatarSrc)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openAvatar(avatarSrc); }}
-                  className="cursor-pointer mx-auto aspect-square w-full max-w-70 lg:max-w-74 rounded-full border border-[#dbe2f1] bg-white shadow-sm overflow-hidden p-2 flex items-center justify-center transition duration-200 hover:scale-[1.015] hover:shadow-[0_14px_34px_-26px_rgba(37,52,63,0.55)]"
-                >
-                  <img src={avatarSrc} alt={displayName} className="max-h-full max-w-full object-contain" />
-                </div>
-              ) : (
-                <div className="mx-auto flex aspect-square w-full max-w-70 lg:max-w-74 items-center justify-center rounded-full border border-[#dbe2f1] bg-white text-[64px] font-black text-(--color-secondary) shadow-sm">
-                  {displayName
-                    .split(/\s+/)
-                    .slice(0, 2)
-                    .map((word) => word[0])
-                    .join("")
-                    .toUpperCase()}
-                </div>
-              )}
-            </div>
-
-            {/* Info Dasar */}
-            <div className="space-y-1 pt-2">
-              <h1 className="text-[26px] leading-[1.2] font-extrabold text-(--color-dark)">
-                {displayName}
-              </h1>
-              <p className="text-[20px] font-light leading-snug text-(--color-secondary)">
-                @{profileData.userName}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="text-[14px] font-semibold text-(--color-secondary)">
-                {displayRole}
-              </div>
-
-              <div className="mt-2 text-[13px] text-(--color-secondary)">
-                {profileData.email && (
-                  <div className="truncate">{profileData.email}</div>
+            <div className="rounded-3xl border border-(--color-gray) bg-white p-6 shadow-sm">
+              <div className="flex flex-col items-center text-center">
+                {avatarSrc ? (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openAvatar(avatarSrc)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        openAvatar(avatarSrc);
+                      }
+                    }}
+                    className="cursor-pointer h-28 w-28 overflow-hidden rounded-full border border-[#dbe2f1] bg-white p-2 transition hover:shadow-[0_14px_34px_-26px_rgba(37,52,63,0.55)]">
+                    <img
+                      src={avatarSrc}
+                      alt={displayName}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid h-28 w-28 place-items-center rounded-full border border-[#dbe2f1] bg-white text-[34px] font-black text-(--color-secondary)">
+                    {displayName
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((word) => word[0])
+                      .join("")
+                      .toUpperCase()}
+                  </div>
                 )}
 
-                <div className="mt-1 flex items-center gap-3">
-                  <span className="text-[13px] text-(--color-secondary)">
-                    {followerCount} pengikut
-                  </span>
+                <h1 className="mt-4 text-[18px] font-extrabold text-(--color-dark)">
+                  {displayName}
+                </h1>
+                <p className="mt-1 text-[13px] text-(--color-secondary)">
+                  @{profileData.userName} · {displayRole}
+                </p>
+              </div>
 
-                  <span className="text-[13px] text-(--color-secondary)">·</span>
-
-                  <span className="text-[13px] text-(--color-secondary)">
-                    {followingCount} mengikuti
-                  </span>
+              <div className="mt-4 text-center text-[13px] text-(--color-secondary)">
+                {profileData.email ? (
+                  <div className="truncate">{profileData.email}</div>
+                ) : null}
+                <div className="mt-1">
+                  {followerCount} pengikut · {followingCount} mengikuti
                 </div>
               </div>
 
-              {profileSummary.length > 0 && (
-                <div className="flex flex-col gap-2 text-[13px] text-(--color-secondary)">
+              {profileSummary.length > 0 ? (
+                <div className="mt-5 flex flex-col gap-2 text-[13px] text-(--color-secondary)">
                   {profileSummary.map((item) => (
                     <span
                       key={item}
-                      className="inline-flex items-center gap-2 rounded-full border border-(--color-light-blue) bg-white px-3 py-1.5 w-max">
+                      className="inline-flex w-max items-center gap-2 rounded-full border border-(--color-light-blue) bg-white px-3 py-1.5">
                       {item}
                     </span>
                   ))}
                 </div>
-              )}
+              ) : null}
 
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="mt-5 flex flex-wrap gap-3">
                 <button
                   onClick={handleOpenEdit}
-                  className="rounded-full bg-[#25343f] px-5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#1f2c35]"
-                >
+                  className="rounded-full bg-[#25343f] px-5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#1f2c35]">
                   Edit Profil
-                </button>
-                <button
-                  onClick={() => {
-                    try {
-                      navigator.clipboard.writeText(window.location.href);
-                    } catch { /* ignore */ }
-                  }}
-                  className="rounded-full border border-(--color-gray) px-4 py-2 text-[14px] font-semibold text-(--color-dark) transition hover:bg-[#e2e8f0]"
-                >
-                  Salin Link Profil
                 </button>
               </div>
             </div>
@@ -810,41 +661,7 @@ export default function ProfilePage() {
                   </article>
                 )}
 
-                {profileData.campuses?.length > 0 && isAlumniProfile && (
-                  <article style={cardRevealStyle(2)} className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)] transition duration-200 hover:shadow-[0_16px_28px_-24px_rgba(37,52,63,0.5)]">
-                    <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
-                      <span className="h-5 w-1.5 rounded-full bg-(--color-like-blue)" />
-                      <Icon icon={GraduationCap} className="h-6 w-6 text-(--color-like-blue)" />
-                      <h2 className="text-[18px] font-bold text-(--color-dark)">
-                        Kampus
-                      </h2>
-                    </div>
-
-                    <div className="mt-4 space-y-2 text-[14px] text-(--color-secondary)">
-                      {profileData.campuses.map((campus) => (
-                        <p key={campus}>{campus}</p>
-                      ))}
-                    </div>
-                  </article>
-                )}
-
-                {profileData.workplaces?.length > 0 && isAlumniProfile && (
-                  <article style={cardRevealStyle(3)} className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0px_1px_6px_0px_rgba(0,0,0,0.06)] transition duration-200 hover:shadow-[0_16px_28px_-24px_rgba(37,52,63,0.5)]">
-                    <div className="flex items-center gap-3 border-b border-[#f3f4f6] pb-4">
-                      <span className="h-5 w-1.5 rounded-full bg-(--color-like-blue)" />
-                      <Icon icon={Briefcase} className="h-6 w-6 text-(--color-like-blue)" />
-                      <h2 className="text-[18px] font-bold text-(--color-dark)">
-                        Tempat Kerja
-                      </h2>
-                    </div>
-
-                    <div className="mt-4 space-y-2 text-[14px] text-(--color-secondary)">
-                      {profileData.workplaces.map((workplace) => (
-                        <p key={workplace}>{workplace}</p>
-                      ))}
-                    </div>
-                  </article>
-                )}
+                {/* `campuses` / `workplaces` legacy UI removed (backend now returns `schools` + `works`). */}
               </section>
 
               {/* Sidebar Info/Bagikan Kanan */}
@@ -880,10 +697,27 @@ export default function ProfilePage() {
                     Bagikan
                   </h3>
                   <div className="space-y-2">
-                    <button className="w-full rounded-lg border border-(--color-gray) bg-white px-3 py-2 text-[13px] font-medium text-(--color-dark) transition hover:bg-(--color-gray)">
+                    <button
+                      onClick={() => void copyPublicProfileLink()}
+                      className="w-full rounded-lg border border-(--color-gray) bg-white px-3 py-2 text-[13px] font-medium text-(--color-dark) transition hover:bg-(--color-gray)">
                       Copy Link
                     </button>
-                    <button className="w-full rounded-lg bg-(--color-dark) px-3 py-2 text-[13px] font-medium text-white transition hover:bg-[#1f2c35]">
+                    <button
+                      onClick={async () => {
+                        try {
+                          if (navigator.share) {
+                            await navigator.share({
+                              title: `Profil ${displayName}`,
+                              url: publicProfileUrl,
+                            });
+                            return;
+                          }
+                        } catch {
+                          // fallback copy
+                        }
+                        await copyPublicProfileLink();
+                      }}
+                      className="w-full rounded-lg bg-(--color-dark) px-3 py-2 text-[13px] font-medium text-white transition hover:bg-[#1f2c35]">
                       Share
                     </button>
                   </div>

@@ -12,6 +12,10 @@ function normalizeProfileData(rawData) {
   const roleLabel = String(source.role || source.subtitle || "").toLowerCase();
   const isAlumni = roleLabel.includes("alumni") || Boolean(source.isAlumni);
   const isStudent = roleLabel.includes("student") || Boolean(source.isStudent);
+  const schools = Array.isArray(source.schools) ? source.schools : [];
+  const works = Array.isArray(source.works) ? source.works : [];
+  const primarySchool = schools[0] || null;
+  const primaryWork = works[0] || null;
 
   return {
     ...source,
@@ -28,12 +32,20 @@ function normalizeProfileData(rawData) {
       source.image ||
       "",
     field: source.field || source.nim_field || "",
-    major: source.major || "",
-    intakeDate: source.intakeDate || "",
-    campusName: source.campusName || "",
-    degree: source.degree || "",
-    campuses: Array.isArray(source.campuses) ? source.campuses : [],
-    workplaces: Array.isArray(source.workplaces) ? source.workplaces : [],
+    // School/work info typically live under `schools[]` and `works[]`.
+    nim: primarySchool?.nim || source.nim || "",
+    campusName: primarySchool?.campusName || source.campusName || "",
+    major: primarySchool?.major || source.major || "",
+    degree: primarySchool?.degree || source.degree || "",
+    intakeDate: primarySchool?.intakeDate || source.intakeDate || "",
+    graduateDate: primarySchool?.graduateDate || source.graduateDate || "",
+    workPlace: primaryWork?.workPlace || source.workPlace || "",
+    fromYear: primaryWork?.fromYear || source.fromYear || "",
+    toYear: primaryWork?.toYear || source.toYear || "",
+    isMentor: Boolean(primaryWork?.isMentor ?? source.isMentor),
+    isPhd: Boolean(primaryWork?.isPhd ?? source.isPhd),
+    schools,
+    works,
   };
 }
 
@@ -73,7 +85,7 @@ export default function ProfileEditPage() {
     const token = getAuthToken();
     if (!token) throw new Error("Tidak ada token. Silakan login ulang.");
 
-    const response = await updateUserProfile(patchPayload);
+    const response = await updateUserProfile(patchPayload, profileData?.id || "");
     const updatedUser = response?.data || response?.user || response || {};
     const normalized = normalizeProfileData(updatedUser);
     setProfileData(normalized);
