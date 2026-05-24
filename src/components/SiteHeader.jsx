@@ -35,7 +35,11 @@ export function SiteHeader({
 }) {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [sessionUser, setSessionUser] = useState(() => user ?? getAuthUser());
+  const [sessionUser, setSessionUser] = useState(() => {
+    const token = getAuthToken();
+    if (!token) return null;
+    return user ?? getAuthUser();
+  });
   const [avatarLoaded, setAvatarLoaded] = useState(false);
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export function SiteHeader({
 
       if (!token) {
         if (isMounted) {
-          setSessionUser(storedUser);
+          setSessionUser(null);
         }
         return;
       }
@@ -106,7 +110,7 @@ export function SiteHeader({
   };
 
   const avatarSrc = getAvatarUrl(sessionUser);
-  const hasSession = Boolean(sessionUser || getAuthToken());
+  const hasSession = Boolean(getAuthToken());
 
   useEffect(() => {
     setAvatarLoaded(false);
