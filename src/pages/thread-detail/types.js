@@ -38,6 +38,7 @@
  * @property {string} name
  * @property {string} role
  * @property {string} org
+ * @property {string} [userNameRaw]
  * @property {BadgeType[]} badges
  * @property {ContributorStats} stats
  */

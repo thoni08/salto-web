@@ -86,6 +86,29 @@ function formatDisplayDate(value) {
     .replace(",", " ·");
 }
 
+function formatJoinedDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function pickBestAnswerCount(participant) {
+  return toNumber(
+    participant?.bestAnswerCount ??
+      participant?.bestAnswersCount ??
+      participant?.totalBestAnswers ??
+      0,
+    0,
+  );
+}
+
 function splitParagraphs(content) {
   return String(content || "")
     .split(/\n{2,}/)
@@ -301,17 +324,24 @@ function buildContributorsFromParticipants(participantSummary = {}) {
     const nameValue = participant?.fullName || participant?.userName || "Anonim";
     const roleValue = participant?.role || "Alumni";
     const fieldValue = participant?.field || "Bidang belum tersedia";
+    const userNameRaw = participant?.userName
+      ? String(participant.userName).trim()
+      : "";
+    const joinedValue = formatJoinedDate(participant?.createdAt) || "-";
+    const totalReplies = toNumber(participant?.totalReplies, 0);
+    const bestAnswerCount = pickBestAnswerCount(participant);
 
     return {
       id: String(participant?.id || `contributor-${index + 1}`),
       name: nameValue,
       role: roleValue,
       org: fieldValue,
+      userNameRaw,
       badges: [],
       stats: {
-        answer: "0",
-        approved: "-",
-        joined: "-",
+        answer: String(totalReplies),
+        approved: String(bestAnswerCount),
+        joined: joinedValue,
       },
     };
   });
@@ -322,11 +352,21 @@ export function mapApiThreadDetail(thread, fallback = {}) {
     return fallback;
   }
 
-  const author = thread?.author || {};
-  const stats = thread?.stats || {};
-  const content = String(thread?.content || "");
+  const resolvedThread =
+    thread &&
+    typeof thread === "object" &&
+    "success" in thread &&
+    "data" in thread &&
+    thread.data &&
+    typeof thread.data === "object"
+      ? thread.data
+      : thread;
+
+  const author = resolvedThread?.author || {};
+  const stats = resolvedThread?.stats || {};
+  const content = String(resolvedThread?.content || "");
   const title = String(
-    thread?.title || fallback?.threadHeader?.title || "Tanpa Judul",
+    resolvedThread?.title || fallback?.threadHeader?.title || "Tanpa Judul",
   );
   const totalViews = toNumber(
     stats.totalViews ?? stats.views ?? stats.viewCount,
@@ -338,14 +378,14 @@ export function mapApiThreadDetail(thread, fallback = {}) {
   );
 
   const contributorsFromApi = buildContributorsFromParticipants(
-    thread?.participantSummary,
+    resolvedThread?.participantSummary,
   );
 
   return {
     ...fallback,
     threadHeader: {
       ...(fallback.threadHeader || {}),
-      id: String(thread.id ?? fallback.threadHeader?.id ?? ""),
+      id: String(resolvedThread.id ?? fallback.threadHeader?.id ?? ""),
       title,
       author:
         author.fullName ||
@@ -357,7 +397,7 @@ export function mapApiThreadDetail(thread, fallback = {}) {
         fallback.threadHeader?.role ||
         "Mahasiswa",
       createdAt:
-        formatDisplayDate(thread.createdAt) ||
+        formatDisplayDate(resolvedThread.createdAt) ||
         fallback.threadHeader?.createdAt ||
         "",
       views:
@@ -374,11 +414,13 @@ export function mapApiThreadDetail(thread, fallback = {}) {
       "Diskusi",
       title.length > 34 ? `${title.slice(0, 31).trimEnd()}...` : title,
     ],
-    threadCategoryChips: buildThreadTags(thread.tags).map((tag, index) => ({
-      id: `chip-${thread.id}-${index}`,
-      label: tag.label,
-      tone: tag.tone,
-    })),
+    threadCategoryChips: buildThreadTags(resolvedThread.tags).map(
+      (tag, index) => ({
+        id: `chip-${resolvedThread.id}-${index}`,
+        label: tag.label,
+        tone: tag.tone,
+      }),
+    ),
     threadIntroParagraphs: splitParagraphs(content),
     contributors:
       contributorsFromApi.length > 0
@@ -468,4 +510,16 @@ export async function fetchThreadById(threadId) {
 
 export async function fetchRelatedThreads(threadId) {
   return apiClient.get(`/api/threads/${threadId}/related`);
+}
+
+export async function followUser(userId) {
+  return apiClient.post("/api/user/follow", { userId });
+}
+
+export async function unfollowUser(userId) {
+  return apiClient.post("/api/user/unfollow", { userId });
+}
+
+export async function fetchIsFollowing(userId) {
+  return apiClient.get(`/api/user/${userId}/is-following`);
 }

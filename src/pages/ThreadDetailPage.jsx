@@ -18,10 +18,14 @@ import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import { getAuthToken, getAuthUser } from "../services/authStorage.js";
 import {
+  fetchIsFollowing,
   fetchRelatedThreads,
   fetchThreadById,
+  followUser,
   mapApiThreadDetail,
+  unfollowUser,
 } from "../services/saltoApi.js";
+import { showToast } from "../utils/toast.js";
 import {
   AnswerCard,
   AnswerComposerCard,
@@ -113,6 +117,7 @@ export default function ThreadDetailPage() {
   const [isThreadLoading, setIsThreadLoading] = useState(true);
   const [threadLoadError, setThreadLoadError] = useState("");
   const [relatedThreadsList, setRelatedThreadsList] = useState([]);
+  const [followStatusByUserId, setFollowStatusByUserId] = useState({});
   const scrollDirection = useScrollDirection();
   const isAuthenticated = Boolean(getAuthToken());
   const authUser = useMemo(() => getAuthUser(), []);
@@ -202,6 +207,115 @@ export default function ThreadDetailPage() {
     statRows,
     relatedThreads: fallbackRelatedThreads,
   } = threadData;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFollowStatus() {
+      if (!isAuthenticated) return;
+      if (!Array.isArray(contributors) || contributors.length === 0) return;
+
+      const targets = contributors
+        .map((contributor) => String(contributor?.id || "").trim())
+        .filter(Boolean);
+
+      if (targets.length === 0) return;
+
+      const uniqueTargets = [...new Set(targets)];
+      const missingTargets = uniqueTargets.filter((userId) => {
+        const entry = followStatusByUserId[userId];
+        return entry == null;
+      });
+
+      if (missingTargets.length === 0) return;
+
+      setFollowStatusByUserId((current) => {
+        const next = { ...current };
+        missingTargets.forEach((userId) => {
+          next[userId] = { isFollowing: false, loading: true };
+        });
+        return next;
+      });
+
+      await Promise.all(
+        missingTargets.map(async (userId) => {
+          try {
+            const res = await fetchIsFollowing(userId);
+            const payload = res?.data || res;
+            const isFollowing = Boolean(
+              payload?.isFollowing ?? payload?.data?.isFollowing,
+            );
+
+            if (active) {
+              setFollowStatusByUserId((current) => ({
+                ...current,
+                [userId]: { isFollowing, loading: false },
+              }));
+            }
+          } catch (error) {
+            if (active) {
+              setFollowStatusByUserId((current) => ({
+                ...current,
+                [userId]: {
+                  isFollowing: false,
+                  loading: false,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : "Gagal memuat status mengikuti.",
+                },
+              }));
+            }
+          }
+        }),
+      );
+    }
+
+    loadFollowStatus();
+
+    return () => {
+      active = false;
+    };
+  }, [contributors, isAuthenticated]);
+
+  const handleToggleFollow = async (userId, currentlyFollowing) => {
+    if (!isAuthenticated) {
+      showToast("Silakan login untuk mengikuti user.", { type: "warning" });
+      return;
+    }
+
+    const targetId = String(userId || "").trim();
+    if (!targetId) return;
+
+    setFollowStatusByUserId((current) => ({
+      ...current,
+      [targetId]: { isFollowing: !currentlyFollowing, loading: true },
+    }));
+
+    try {
+      if (currentlyFollowing) {
+        await unfollowUser(targetId);
+        showToast("Berhasil unfollow user.", { type: "info" });
+      } else {
+        await followUser(targetId);
+        showToast("Berhasil follow user.", { type: "info" });
+      }
+
+      setFollowStatusByUserId((current) => ({
+        ...current,
+        [targetId]: { isFollowing: !currentlyFollowing, loading: false },
+      }));
+    } catch (error) {
+      setFollowStatusByUserId((current) => ({
+        ...current,
+        [targetId]: { isFollowing: currentlyFollowing, loading: false },
+      }));
+      showToast(
+        error instanceof Error ? error.message : "Request gagal.",
+        { type: "error" },
+      );
+    }
+  };
 
   const currentThreadId = threadHeader.id;
   const sortMode = sortModeByThread[currentThreadId] || "popular";
@@ -501,7 +615,20 @@ export default function ThreadDetailPage() {
                 <div className="space-y-3.5">
                   {contributors.map((contributor, idx) => (
                     <div key={contributor.id}>
-                      <ContributorCard contributor={contributor} />
+                      <ContributorCard
+                        contributor={contributor}
+                        isFollowing={
+                          Boolean(
+                            followStatusByUserId?.[String(contributor.id)]
+                              ?.isFollowing,
+                          )
+                        }
+                        isFollowLoading={Boolean(
+                          followStatusByUserId?.[String(contributor.id)]
+                            ?.loading,
+                        )}
+                        onToggleFollow={handleToggleFollow}
+                      />
                       {idx < contributors.length - 1 ? (
                         <div className="mt-3.5 border-t border-[#e5e7eb]" />
                       ) : null}

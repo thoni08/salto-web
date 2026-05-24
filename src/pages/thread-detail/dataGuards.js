@@ -85,6 +85,7 @@ export function sanitizeContributor(contributor, index = 0) {
     name: ensureString(safeContributor.name, "Kontributor"),
     role: ensureString(safeContributor.role, "Role belum tersedia"),
     org: ensureString(safeContributor.org, "Organisasi belum tersedia"),
+    userNameRaw: ensureString(safeContributor.userNameRaw, ""),
     badges: ensureBadges(safeContributor.badges),
     stats: {
       answer: ensureString(stats.answer, "0"),
