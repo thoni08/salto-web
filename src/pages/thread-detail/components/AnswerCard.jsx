@@ -3,6 +3,7 @@ import {
   EllipsisVertical,
   Flag,
   MessageCircle,
+  Star,
   ThumbsUp,
 } from "lucide-react";
 import { useState } from "react";
@@ -75,9 +76,19 @@ function normalizeReply(reply, answerId, fallbackText) {
   };
 }
 
-export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
+export function AnswerCard({
+  answer,
+  canReply = true,
+  replyDisabledReason = "Kamu hanya bisa membalas jawaban dari alumni.",
+  canDelete = false,
+  canMarkBestAnswer = false,
+  onLikeToggle,
+  onDelete,
+  onMarkBestAnswer,
+  onReplySubmit,
+}) {
   const safeAnswer = sanitizeAnswer(answer);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(Boolean(safeAnswer.currentUserLiked));
   const [likeCount, setLikeCount] = useState(safeAnswer.likes);
   const [replies, setReplies] = useState(safeAnswer.replies);
   const [areRepliesVisible, setAreRepliesVisible] = useState(
@@ -88,6 +99,8 @@ export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [replyFeedback, setReplyFeedback] = useState("");
   const [isReplyFeedbackError, setIsReplyFeedbackError] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const replyLength = replyText.trim().length;
   const canSendReply = replyLength >= 4 && !isSendingReply;
@@ -108,6 +121,12 @@ export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
   };
 
   const toggleReplyComposer = () => {
+    if (!canReply) {
+      setReplyFeedback(replyDisabledReason);
+      setIsReplyFeedbackError(true);
+      setAreRepliesVisible(true);
+      return;
+    }
     setIsReplyComposerOpen((previous) => !previous);
     setAreRepliesVisible(true);
   };
@@ -164,6 +183,12 @@ export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
               <p className="text-[14px] leading-5 font-bold text-(--color-dark)">
                 {safeAnswer.author}
               </p>
+              {safeAnswer.isBestAnswer ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] px-2 py-0.5 text-[10px] leading-3.75 font-semibold text-[#92400e]">
+                  <Icon icon={Star} className="h-3 w-3" strokeWidth={2} />
+                  Best
+                </span>
+              ) : null}
               {safeAnswer.badges.map((badge) => (
                 <Badge key={`${safeAnswer.id}-${badge}`} type={badge} />
               ))}
@@ -179,11 +204,55 @@ export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className={`${buttonFx} rounded-full p-1 text-[#9ca3af]`}>
-          <Icon icon={EllipsisVertical} className="h-5 w-5" strokeWidth={2} />
-        </button>
+        {(canDelete || canMarkBestAnswer) ? (
+          <div className="relative">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((v) => !v)}
+              className={`${buttonFx} rounded-full p-1 text-[#9ca3af] hover:bg-(--color-gray) hover:text-(--color-dark)`}>
+              <Icon
+                icon={EllipsisVertical}
+                className="h-5 w-5"
+                strokeWidth={2}
+              />
+            </button>
+
+            {isMenuOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 z-30 mt-2 w-44 overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_14px_24px_-16px_rgba(37,52,63,0.45)]">
+                {canMarkBestAnswer ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onMarkBestAnswer?.(safeAnswer.id);
+                    }}
+                    className={`${buttonFx} flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-(--color-dark) hover:bg-(--color-gray)`}>
+                    <Icon icon={Star} className="h-4 w-4" strokeWidth={2} />
+                    Jadikan Best
+                  </button>
+                ) : null}
+
+                {canDelete ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsDeleteConfirmOpen(true);
+                    }}
+                    className={`${buttonFx} flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-[#b91c1c] hover:bg-[#fef2f2]`}>
+                    Hapus
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
       <div className="mt-4 space-y-3 text-[14px] leading-[22.75px] text-[#374151]">
@@ -212,6 +281,7 @@ export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
               type="button"
               aria-label="Balas jawaban"
               onClick={toggleReplyComposer}
+              disabled={!canReply}
               className={`${buttonFx} inline-flex items-center gap-2 rounded-full border border-(--color-secondary) px-4 py-2 text-[14px] leading-5 font-medium text-(--color-dark) hover:bg-(--color-gray)`}>
               <Icon
                 icon={MessageCircle}
@@ -301,6 +371,36 @@ export function AnswerCard({ answer, onLikeToggle, onReplySubmit }) {
           </>
         ) : null}
       </div>
+
+      {isDeleteConfirmOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-[0_18px_28px_-16px_rgba(37,52,63,0.6)]">
+            <h3 className="text-[14px] font-bold text-(--color-dark)">
+              Hapus komentar?
+            </h3>
+            <p className="mt-1 text-[12px] text-(--color-secondary)">
+              Yakin hapus komentar ini?
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className={`${buttonFx} rounded-full border border-[#d1d5db] px-4 py-2 text-[12px] font-semibold text-(--color-secondary)`}>
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  onDelete?.(safeAnswer.id);
+                }}
+                className={`${buttonFx} rounded-full bg-[#dc2626] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#b91c1c]`}>
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -383,6 +383,7 @@ export function mapApiThreadDetail(thread, fallback = {}) {
 
   return {
     ...fallback,
+    currentUserSaved: Boolean(resolvedThread?.currentUserSaved),
     threadHeader: {
       ...(fallback.threadHeader || {}),
       id: String(resolvedThread.id ?? fallback.threadHeader?.id ?? ""),
@@ -512,6 +513,10 @@ export async function fetchRelatedThreads(threadId) {
   return apiClient.get(`/api/threads/${threadId}/related`);
 }
 
+export async function fetchCurrentUser() {
+  return apiClient.get("/api/user");
+}
+
 export async function followUser(userId) {
   return apiClient.post("/api/user/follow", { userId });
 }
@@ -522,4 +527,46 @@ export async function unfollowUser(userId) {
 
 export async function fetchIsFollowing(userId) {
   return apiClient.get(`/api/user/${userId}/is-following`);
+}
+
+export async function postThreadComment(threadId, { content, parentId } = {}) {
+  const trimmed = String(content || "").trim();
+  if (!trimmed) {
+    throw new Error("Konten komentar tidak boleh kosong.");
+  }
+
+  const payload = { content: trimmed };
+  if (parentId) {
+    payload.parentId = parentId;
+  }
+
+  return apiClient.post(`/api/threads/${threadId}/comments`, payload);
+}
+
+export async function fetchThreadComments(threadId) {
+  return apiClient.get(`/api/threads/${threadId}/comments`);
+}
+
+export async function saveThread(threadId) {
+  return apiClient.patch(`/api/threads/${threadId}/save`);
+}
+
+export async function unsaveThread(threadId) {
+  return apiClient.delete(`/api/threads/${threadId}/save`);
+}
+
+export async function likeComment(commentId) {
+  return apiClient.patch(`/api/comments/${commentId}/like`);
+}
+
+export async function unlikeComment(commentId) {
+  return apiClient.delete(`/api/comments/${commentId}/like`);
+}
+
+export async function setBestAnswer(commentId) {
+  return apiClient.patch(`/api/comments/${commentId}/best-answer`);
+}
+
+export async function deleteComment(commentId) {
+  return apiClient.delete(`/api/comments/${commentId}`);
 }
