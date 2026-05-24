@@ -62,7 +62,7 @@ export function LegalPageLayout({
       <main className="bg-[#f4f6fb]">
         <section className="mx-auto w-full max-w-316 px-4 py-10 lg:px-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-[240px]">
+            <div className="min-w-60">
               <h1 className="text-[34px] leading-[1.15] font-extrabold tracking-[-0.02em] text-(--color-dark)">
                 {title}
               </h1>
