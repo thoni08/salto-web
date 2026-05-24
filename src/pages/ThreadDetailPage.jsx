@@ -2,6 +2,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BarChart3,
+  Bookmark,
+  BookmarkCheck,
   Clock3,
   Eye,
   Flame,
@@ -13,15 +15,32 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { useScrollDirection } from "../hooks/useScrollDirection";
-import { getAuthToken, getAuthUser } from "../services/authStorage.js";
 import {
+  getAuthToken,
+  getAuthUser,
+  updateAuthUser,
+} from "../services/authStorage.js";
+import {
+  deleteComment,
+  fetchCurrentUser,
+  fetchIsFollowing,
   fetchRelatedThreads,
+  fetchThreadComments,
   fetchThreadById,
+  followUser,
+  likeComment,
   mapApiThreadDetail,
+  postThreadComment,
+  saveThread,
+  setBestAnswer,
+  unlikeComment,
+  unfollowUser,
+  unsaveThread,
 } from "../services/saltoApi.js";
+import { showToast } from "../utils/toast.js";
 import {
   AnswerCard,
   AnswerComposerCard,
@@ -65,6 +84,38 @@ const BREADCRUMB_HREF_BY_LABEL = {
   Diskusi: "/thread",
 };
 
+function roleIndicatesAlumni(role) {
+  const normalized = String(role || "").toLowerCase();
+  return normalized === "alumni" || normalized.includes("alumni");
+}
+
+function buildDraftStorageKey({ threadId, authUser }) {
+  const userKey = String(authUser?.id || authUser?.userName || "guest").trim();
+  return `draft:thread:${threadId}:user:${userKey || "guest"}`;
+}
+
+function normalizeAuthUser(rawUser) {
+  const source =
+    rawUser?.data || rawUser?.user || rawUser?.profile || rawUser || {};
+
+  if (!source || typeof source !== "object") return null;
+
+  return {
+    ...source,
+    fullName:
+      source.fullName ||
+      source.fullname ||
+      source.name ||
+      source.userName ||
+      source.username ||
+      "",
+    userName: source.userName || source.username || "",
+    role: source.role || "",
+    field: source.field || "",
+    email: source.email || "",
+  };
+}
+
 function parseThreadTimestamp(createdAt) {
   const match = createdAt.match(
     /(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s+·\s+(\d{2}):(\d{2})/,
@@ -106,16 +157,63 @@ function sortAnswerList(answerList, sortMode) {
 
 export default function ThreadDetailPage() {
   const { threadId } = useParams();
+  const navigate = useNavigate();
   const [sortModeByThread, setSortModeByThread] = useState({});
-  const [viewerIsAlumni, setViewerIsAlumni] = useState(currentViewer.isAlumni);
   const [submittedAnswersByThread, setSubmittedAnswersByThread] = useState({});
   const [apiThreadSnapshot, setApiThreadSnapshot] = useState(null);
   const [isThreadLoading, setIsThreadLoading] = useState(true);
   const [threadLoadError, setThreadLoadError] = useState("");
   const [relatedThreadsList, setRelatedThreadsList] = useState([]);
+  const [followStatusByUserId, setFollowStatusByUserId] = useState({});
+  const [answerDraft, setAnswerDraft] = useState("");
+  const [threadComments, setThreadComments] = useState(null);
+  const [isThreadSaved, setIsThreadSaved] = useState(false);
+  const [isSavingThread, setIsSavingThread] = useState(false);
   const scrollDirection = useScrollDirection();
   const isAuthenticated = Boolean(getAuthToken());
-  const authUser = useMemo(() => getAuthUser(), []);
+  const [authUser, setAuthUser] = useState(() =>
+    normalizeAuthUser(getAuthUser()),
+  );
+  const [didHydrateAuthUser, setDidHydrateAuthUser] = useState(false);
+
+  useEffect(() => {
+    const handleStorage = () => setAuthUser(normalizeAuthUser(getAuthUser()));
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function hydrateAuthUser() {
+      if (!isAuthenticated) return;
+      if (didHydrateAuthUser) return;
+
+      try {
+        const response = await fetchCurrentUser();
+        const payload = response?.data || response;
+        const user = normalizeAuthUser(
+          payload?.data || payload?.user || payload,
+        );
+
+        if (!active) return;
+        if (user && typeof user === "object") {
+          updateAuthUser(user);
+          setAuthUser(user);
+        }
+      } catch {
+        // ignore: authUser stays as-is; UI falls back to mock viewer
+      } finally {
+        if (active) setDidHydrateAuthUser(true);
+      }
+    }
+
+    hydrateAuthUser();
+
+    return () => {
+      active = false;
+    };
+  }, [didHydrateAuthUser, isAuthenticated]);
 
   const fallbackThreadData = useMemo(
     () => getThreadDetailData(threadId),
@@ -203,6 +301,203 @@ export default function ThreadDetailPage() {
     relatedThreads: fallbackRelatedThreads,
   } = threadData;
 
+  useEffect(() => {
+    setIsThreadSaved(Boolean(threadData?.currentUserSaved));
+  }, [threadData?.currentUserSaved]);
+
+  function formatCommentCreatedAt(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+      .format(date)
+      .replace(",", " ·");
+  }
+
+  function mapApiReplyToUi(reply) {
+    const author = reply?.author || {};
+    const role = String(author?.role || "");
+
+    return {
+      id: String(reply?.id || `reply-${Date.now()}`),
+      author: String(author?.fullName || author?.userName || "Pengguna"),
+      role: role || "Member",
+      text: String(reply?.content || reply?.text || "").trim(),
+      createdAt: reply?.createdAt
+        ? formatCommentCreatedAt(reply.createdAt)
+        : "-",
+      likes: Number(reply?.stats?.likes ?? reply?.likes ?? 0) || 0,
+    };
+  }
+
+  function mapApiCommentToUi(comment) {
+    const author = comment?.author || {};
+    const role = String(author?.role || "");
+    const replies = Array.isArray(comment?.replies)
+      ? comment.replies.map(mapApiReplyToUi)
+      : [];
+
+    return {
+      id: String(comment?.id || `comment-${Date.now()}`),
+      authorId: String(comment?.authorId || author?.id || ""),
+      author: String(author?.fullName || author?.userName || "Anonim"),
+      authorRole: role,
+      accent: Boolean(comment?.isBestAnswer),
+      isBestAnswer: Boolean(comment?.isBestAnswer),
+      subtitle: String(author?.field || ""),
+      createdAt: comment?.createdAt
+        ? formatCommentCreatedAt(comment.createdAt)
+        : "-",
+      badges: [],
+      likes: Number(comment?.stats?.likes ?? 0) || 0,
+      currentUserLiked: Boolean(comment?.currentUserLiked),
+      paragraphs: [String(comment?.content || "").trim()].filter(Boolean),
+      replies,
+    };
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadComments() {
+      try {
+        const response = await fetchThreadComments(threadId);
+        const payload = response?.data || response;
+        const list = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+        const mapped = list.map(mapApiCommentToUi);
+
+        if (active) setThreadComments(mapped);
+      } catch {
+        if (active) setThreadComments(null);
+      }
+    }
+
+    loadComments();
+
+    return () => {
+      active = false;
+    };
+  }, [threadId]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFollowStatus() {
+      if (!isAuthenticated) return;
+      if (!Array.isArray(contributors) || contributors.length === 0) return;
+
+      const targets = contributors
+        .map((contributor) => String(contributor?.id || "").trim())
+        .filter(Boolean);
+
+      if (targets.length === 0) return;
+
+      const uniqueTargets = [...new Set(targets)];
+      const missingTargets = uniqueTargets.filter((userId) => {
+        const entry = followStatusByUserId[userId];
+        return entry == null;
+      });
+
+      if (missingTargets.length === 0) return;
+
+      setFollowStatusByUserId((current) => {
+        const next = { ...current };
+        missingTargets.forEach((userId) => {
+          next[userId] = { isFollowing: false, loading: true };
+        });
+        return next;
+      });
+
+      await Promise.all(
+        missingTargets.map(async (userId) => {
+          try {
+            const res = await fetchIsFollowing(userId);
+            const payload = res?.data || res;
+            const isFollowing = Boolean(
+              payload?.isFollowing ?? payload?.data?.isFollowing,
+            );
+
+            if (active) {
+              setFollowStatusByUserId((current) => ({
+                ...current,
+                [userId]: { isFollowing, loading: false },
+              }));
+            }
+          } catch (error) {
+            if (active) {
+              setFollowStatusByUserId((current) => ({
+                ...current,
+                [userId]: {
+                  isFollowing: false,
+                  loading: false,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : "Gagal memuat status mengikuti.",
+                },
+              }));
+            }
+          }
+        }),
+      );
+    }
+
+    loadFollowStatus();
+
+    return () => {
+      active = false;
+    };
+  }, [contributors, isAuthenticated]);
+
+  const handleToggleFollow = async (userId, currentlyFollowing) => {
+    if (!isAuthenticated) {
+      showToast("Silakan login untuk mengikuti user.", { type: "warning" });
+      return;
+    }
+
+    const targetId = String(userId || "").trim();
+    if (!targetId) return;
+
+    setFollowStatusByUserId((current) => ({
+      ...current,
+      [targetId]: { isFollowing: !currentlyFollowing, loading: true },
+    }));
+
+    try {
+      if (currentlyFollowing) {
+        await unfollowUser(targetId);
+        showToast("Berhasil unfollow user.", { type: "info" });
+      } else {
+        await followUser(targetId);
+        showToast("Berhasil follow user.", { type: "info" });
+      }
+
+      setFollowStatusByUserId((current) => ({
+        ...current,
+        [targetId]: { isFollowing: !currentlyFollowing, loading: false },
+      }));
+    } catch (error) {
+      setFollowStatusByUserId((current) => ({
+        ...current,
+        [targetId]: { isFollowing: currentlyFollowing, loading: false },
+      }));
+      showToast(error instanceof Error ? error.message : "Request gagal.", {
+        type: "error",
+      });
+    }
+  };
+
   const currentThreadId = threadHeader.id;
   const sortMode = sortModeByThread[currentThreadId] || "popular";
   const submittedAnswers = useMemo(
@@ -218,23 +513,44 @@ export default function ThreadDetailPage() {
     [relatedThreadsList, fallbackRelatedThreads],
   );
 
-  const viewerProfile = useMemo(
-    () => ({
-      name: currentViewer.name,
-      role: viewerIsAlumni
-        ? currentViewer.alumniRole || "Alumni"
-        : currentViewer.role,
-      subtitle: viewerIsAlumni
-        ? currentViewer.alumniSubtitle || currentViewer.subtitle
-        : currentViewer.subtitle,
-    }),
-    [viewerIsAlumni],
+  const viewerIsAlumni = useMemo(
+    () => roleIndicatesAlumni(authUser?.role),
+    [authUser?.role],
   );
 
-  const visibleAnswers = useMemo(
-    () => sortAnswerList([...initialAnswers, ...submittedAnswers], sortMode),
-    [initialAnswers, sortMode, submittedAnswers],
+  const viewerProfile = useMemo(
+    () => ({
+      name: authUser?.fullName || authUser?.userName || currentViewer.name,
+      role: authUser?.role || currentViewer.role,
+      subtitle: authUser?.field || authUser?.email || currentViewer.subtitle,
+    }),
+    [authUser],
   );
+
+  const draftStorageKey = useMemo(
+    () =>
+      buildDraftStorageKey({
+        threadId: threadHeader?.id || threadId,
+        authUser,
+      }),
+    [authUser, threadHeader?.id, threadId],
+  );
+
+  useEffect(() => {
+    try {
+      setAnswerDraft(localStorage.getItem(draftStorageKey) || "");
+    } catch {
+      setAnswerDraft("");
+    }
+  }, [draftStorageKey]);
+
+  const visibleAnswers = useMemo(() => {
+    const baseAnswers =
+      Array.isArray(threadComments) && threadComments.length > 0
+        ? threadComments
+        : initialAnswers;
+    return sortAnswerList([...baseAnswers, ...submittedAnswers], sortMode);
+  }, [initialAnswers, sortMode, submittedAnswers, threadComments]);
 
   const answerCountLabel = `${visibleAnswers.length} Jawaban`;
   const bestAnswerCount = visibleAnswers.filter(
@@ -249,11 +565,38 @@ export default function ThreadDetailPage() {
       };
     }
 
-    const submitResult = await submitThreadAnswer({
-      threadId: threadHeader.id,
-      content,
-      viewer: viewerProfile,
-    });
+    let submitResult = null;
+
+    try {
+      const response = await postThreadComment(threadHeader.id, { content });
+      const payload = response?.data || response;
+      const comment = payload?.data || payload?.comment || payload;
+      const author = comment?.author || {};
+
+      submitResult = {
+        ok: true,
+        answer: {
+          id: String(comment?.id || `local-${Date.now()}`),
+          author: author?.fullName || author?.userName || viewerProfile.name,
+          authorRole: author?.role || viewerProfile.role,
+          accent: false,
+          subtitle: author?.field || viewerProfile.subtitle,
+          createdAt: comment?.createdAt || new Date().toISOString(),
+          badges: [],
+          likes: 0,
+          paragraphs: [String(comment?.content || content).trim()],
+          replies: [],
+        },
+        message: payload?.message || "Jawaban berhasil dikirim.",
+        source: "live",
+      };
+    } catch {
+      submitResult = await submitThreadAnswer({
+        threadId: threadHeader.id,
+        content,
+        viewer: viewerProfile,
+      });
+    }
 
     if (!submitResult.ok || !submitResult.answer) {
       return {
@@ -275,10 +618,158 @@ export default function ThreadDetailPage() {
       [currentThreadId]: "latest",
     }));
 
+    try {
+      localStorage.removeItem(draftStorageKey);
+      setAnswerDraft("");
+    } catch {
+      // ignore storage errors
+    }
+
     return {
       ok: true,
       message: submitResult.message || "Jawaban berhasil dikirim.",
     };
+  };
+
+  const normalizeApiReply = (replyPayload, fallbackText) => {
+    const source =
+      replyPayload?.data || replyPayload?.reply || replyPayload || {};
+    const author = source?.author || {};
+
+    return {
+      id: String(source?.id || `reply-${Date.now()}`),
+      author: String(
+        author?.fullName || author?.userName || viewerProfile.name || "Kamu",
+      ),
+      role: String(author?.role || viewerProfile.role || "Member"),
+      text: String(
+        source?.content || source?.text || fallbackText || "",
+      ).trim(),
+      createdAt: String(source?.createdAt || "").trim() || "-",
+      likes: 0,
+    };
+  };
+
+  const handleReplySubmit = async ({ answerId, text }) => {
+    try {
+      const response = await postThreadComment(threadHeader.id, {
+        content: text,
+        parentId: answerId,
+      });
+      return { ok: true, reply: normalizeApiReply(response, text) };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error ? error.message : "Gagal mengirim balasan.",
+      };
+    }
+  };
+
+  const handleToggleThreadSave = async () => {
+    if (!isAuthenticated) {
+      showToast("Silakan login untuk menyimpan thread.", { type: "warning" });
+      navigate("/login");
+      return;
+    }
+
+    if (isSavingThread) return;
+
+    const nextSaved = !isThreadSaved;
+    setIsThreadSaved(nextSaved);
+    setIsSavingThread(true);
+
+    try {
+      if (nextSaved) {
+        await saveThread(threadHeader.id);
+      } else {
+        await unsaveThread(threadHeader.id);
+      }
+    } catch (error) {
+      setIsThreadSaved(!nextSaved);
+      showToast(error instanceof Error ? error.message : "Request gagal.", {
+        type: "error",
+      });
+    } finally {
+      setIsSavingThread(false);
+    }
+  };
+
+  const handleLikeToggle = async ({ answerId, liked }) => {
+    if (!isAuthenticated) {
+      showToast("Silakan login untuk memberi like.", { type: "warning" });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      if (liked) {
+        await likeComment(answerId);
+      } else {
+        await unlikeComment(answerId);
+      }
+
+      setThreadComments((current) => {
+        if (!Array.isArray(current)) return current;
+        return current.map((item) => {
+          if (String(item.id) !== String(answerId)) return item;
+          const previousLikes = Number(item.likes || 0);
+          const nextLikes = liked
+            ? previousLikes + 1
+            : Math.max(0, previousLikes - 1);
+          return { ...item, likes: nextLikes, currentUserLiked: liked };
+        });
+      });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Request gagal.", {
+        type: "error",
+      });
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!isAuthenticated) {
+      showToast("Silakan login terlebih dulu.", { type: "warning" });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await deleteComment(commentId);
+      setThreadComments((current) => {
+        if (!Array.isArray(current)) return current;
+        return current.filter((item) => String(item.id) !== String(commentId));
+      });
+      showToast("Komentar dihapus.", { type: "info" });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Gagal menghapus.", {
+        type: "error",
+      });
+    }
+  };
+
+  const handleMarkBestAnswer = async (commentId) => {
+    if (!isAuthenticated) {
+      showToast("Silakan login terlebih dulu.", { type: "warning" });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await setBestAnswer(commentId);
+      setThreadComments((current) => {
+        if (!Array.isArray(current)) return current;
+        return current.map((item) => {
+          const isBest = String(item.id) === String(commentId);
+          return { ...item, accent: isBest, isBestAnswer: isBest };
+        });
+      });
+      showToast("Best answer diperbarui.", { type: "info" });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Request gagal.", {
+        type: "error",
+      });
+    }
   };
 
   return (
@@ -359,12 +850,28 @@ export default function ThreadDetailPage() {
                     Kembali ke Diskusi
                   </Link>
                 </div>
-
-                <button
-                  type="button"
-                  className={`${buttonFx} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-(--color-secondary) hover:bg-(--color-gray) hover:text-(--color-dark)`}>
-                  <Icon icon={Share2} className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1 text-[14px] leading-5 text-[#6b7280]">
+                  <button
+                    type="button"
+                    className={`${buttonFx} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-(--color-secondary) hover:bg-(--color-gray) hover:text-(--color-dark)`}>
+                    <Icon icon={Share2} className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleToggleThreadSave}
+                    disabled={isSavingThread}
+                    className={`${buttonFx} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium ${
+                      isThreadSaved
+                        ? "text-(--color-like-blue)"
+                        : "text-(--color-secondary)"
+                    } hover:bg-(--color-gray) hover:text-(--color-dark) disabled:opacity-60`}>
+                    <Icon
+                      icon={isThreadSaved ? BookmarkCheck : Bookmark}
+                      className="h-4 w-4"
+                    />
+                    {isThreadSaved ? "Tersimpan" : "Simpan"}
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -468,9 +975,31 @@ export default function ThreadDetailPage() {
               </div>
             </div>
 
-            {visibleAnswers.map((answer) => (
-              <AnswerCard key={answer.id} answer={answer} />
-            ))}
+            {visibleAnswers.map((answer) => {
+              const answerAuthorIsAlumni = roleIndicatesAlumni(
+                answer?.authorRole,
+              );
+              const canReply = viewerIsAlumni || answerAuthorIsAlumni;
+
+              return (
+                <AnswerCard
+                  key={answer.id}
+                  answer={answer}
+                  canReply={canReply}
+                  replyDisabledReason="Kamu hanya bisa membalas jawaban dari alumni."
+                  canDelete={
+                    Boolean(authUser?.id) &&
+                    String(answer?.authorId || "") ===
+                      String(authUser?.id || "")
+                  }
+                  canMarkBestAnswer={viewerIsAlumni}
+                  onDelete={handleDeleteComment}
+                  onMarkBestAnswer={handleMarkBestAnswer}
+                  onLikeToggle={handleLikeToggle}
+                  onReplySubmit={handleReplySubmit}
+                />
+              );
+            })}
 
             <div className="flex items-center gap-2 px-3 pt-1">
               <Icon icon={PenSquare} className="h-6 w-6" />
@@ -486,7 +1015,29 @@ export default function ThreadDetailPage() {
               minCharacters={answerComposerMinCharacters}
               restrictionMessage={answerComposerRestrictionMessage}
               onSubmit={handleSubmitAnswer}
-              onRequestAlumniAccess={() => setViewerIsAlumni(true)}
+              initialValue={answerDraft}
+              onSaveDraft={(value) => {
+                try {
+                  localStorage.setItem(draftStorageKey, String(value || ""));
+                  setAnswerDraft(String(value || ""));
+                } catch {
+                  // ignore storage errors
+                }
+              }}
+              onRequestAlumniAccess={() => {
+                if (!isAuthenticated) {
+                  showToast("Silakan login untuk mendaftar sebagai alumni.", {
+                    type: "warning",
+                  });
+                  navigate("/login");
+                  return;
+                }
+
+                showToast("Lengkapi data profil untuk pengajuan alumni.", {
+                  type: "info",
+                });
+                navigate("/profile/edit");
+              }}
             />
           </section>
 
@@ -501,7 +1052,18 @@ export default function ThreadDetailPage() {
                 <div className="space-y-3.5">
                   {contributors.map((contributor, idx) => (
                     <div key={contributor.id}>
-                      <ContributorCard contributor={contributor} />
+                      <ContributorCard
+                        contributor={contributor}
+                        isFollowing={Boolean(
+                          followStatusByUserId?.[String(contributor.id)]
+                            ?.isFollowing,
+                        )}
+                        isFollowLoading={Boolean(
+                          followStatusByUserId?.[String(contributor.id)]
+                            ?.loading,
+                        )}
+                        onToggleFollow={handleToggleFollow}
+                      />
                       {idx < contributors.length - 1 ? (
                         <div className="mt-3.5 border-t border-[#e5e7eb]" />
                       ) : null}

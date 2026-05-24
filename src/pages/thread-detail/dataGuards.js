@@ -56,6 +56,10 @@ export function sanitizeAnswer(answer, index = 0) {
   return {
     id,
     author: ensureString(safeAnswer.author, "Anonim"),
+    authorRole: ensureString(safeAnswer.authorRole, ""),
+    authorId: ensureString(safeAnswer.authorId, ""),
+    currentUserLiked: Boolean(safeAnswer.currentUserLiked),
+    isBestAnswer: Boolean(safeAnswer.isBestAnswer),
     accent: Boolean(safeAnswer.accent),
     subtitle: ensureString(safeAnswer.subtitle, "Informasi belum tersedia"),
     createdAt: ensureString(safeAnswer.createdAt, "-"),
@@ -85,6 +89,7 @@ export function sanitizeContributor(contributor, index = 0) {
     name: ensureString(safeContributor.name, "Kontributor"),
     role: ensureString(safeContributor.role, "Role belum tersedia"),
     org: ensureString(safeContributor.org, "Organisasi belum tersedia"),
+    userNameRaw: ensureString(safeContributor.userNameRaw, ""),
     badges: ensureBadges(safeContributor.badges),
     stats: {
       answer: ensureString(stats.answer, "0"),

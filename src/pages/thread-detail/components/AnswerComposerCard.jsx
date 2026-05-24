@@ -1,5 +1,5 @@
 import { Info, SendHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buttonFx } from "../constants";
 import { Icon } from "./Icon";
 
@@ -7,19 +7,39 @@ export function AnswerComposerCard({
   profile,
   tipText = "",
   canAnswer = false,
-  minCharacters = 100,
   restrictionMessage = "",
   onSubmit,
   onSaveDraft,
   onRequestAlumniAccess,
+  initialValue = "",
 }) {
-  const [answerText, setAnswerText] = useState("");
+  const [answerText, setAnswerText] = useState(initialValue);
+  const lastInitialValueRef = useRef(initialValue);
   const [feedback, setFeedback] = useState("");
   const [isErrorFeedback, setIsErrorFeedback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const characterCount = answerText.length;
-  const canSubmit =
-    canAnswer && characterCount >= minCharacters && !isSubmitting;
+  const trimmedAnswer = answerText.trim();
+  const canSubmit = canAnswer && trimmedAnswer.length > 0 && !isSubmitting;
+
+  useEffect(() => {
+    const prevInitial = lastInitialValueRef.current;
+    lastInitialValueRef.current = initialValue;
+
+    setAnswerText((current) => {
+      const currentTrimmed = String(current || "").trim();
+      if (!currentTrimmed) {
+        return initialValue;
+      }
+
+      // If user hasn't edited since last initialValue was applied, keep in sync.
+      if (current === prevInitial) {
+        return initialValue;
+      }
+
+      return current;
+    });
+  }, [initialValue]);
 
   const applyFeedback = (message, isError) => {
     setFeedback(message);
@@ -36,13 +56,10 @@ export function AnswerComposerCard({
       return;
     }
 
-    const trimmed = answerText.trim();
+    const trimmed = trimmedAnswer;
 
-    if (trimmed.length < minCharacters) {
-      applyFeedback(
-        `Jawaban minimal ${minCharacters} karakter sebelum bisa dikirim.`,
-        true,
-      );
+    if (!trimmed) {
+      applyFeedback("Jawaban wajib diisi sebelum bisa dikirim.", true);
       return;
     }
 
@@ -63,8 +80,12 @@ export function AnswerComposerCard({
   };
 
   const handleSaveDraft = () => {
-    onSaveDraft?.(answerText);
-    applyFeedback("Draft jawaban disimpan.", false);
+    try {
+      onSaveDraft?.(answerText);
+      applyFeedback("Draft jawaban disimpan.", false);
+    } catch {
+      applyFeedback("Gagal menyimpan draft jawaban.", true);
+    }
   };
 
   if (!canAnswer) {
@@ -135,11 +156,11 @@ export function AnswerComposerCard({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p
           className={`text-[12px] leading-4 ${
-            canAnswer && characterCount < minCharacters
+            canAnswer && !trimmedAnswer
               ? "text-[#b45309]"
               : "text-(--color-secondary)"
           }`}>
-          {characterCount} karakter - Minimal {minCharacters} karakter
+          {characterCount} karakter - Wajib diisi
         </p>
 
         <div className="flex items-center gap-3">
