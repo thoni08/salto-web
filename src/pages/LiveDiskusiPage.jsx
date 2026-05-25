@@ -103,7 +103,7 @@ function LiveComingSoonPage() {
   const authUser = useMemo(() => getAuthUser(), []);
 
   return (
-    <div className="min-h-screen bg-[#f4f6fb] text-(--color-dark)">
+    <div className="flex min-h-screen flex-col bg-[#f4f6fb] text-(--color-dark)">
       <SiteHeader
         activeHref="/live"
         user={authUser}
@@ -113,7 +113,7 @@ function LiveComingSoonPage() {
         ]}
       />
 
-      <main className="mx-auto w-full max-w-316 px-4 py-10 lg:px-0">
+      <main className="mx-auto w-full max-w-316 flex-1 px-4 py-10 lg:px-0">
         <section className="overflow-hidden rounded-[28px] border border-[#dfe6f5] bg-white shadow-[0_20px_60px_-44px_rgba(37,52,63,0.6)]">
           <div className="grid gap-8 p-6 md:grid-cols-[minmax(0,1fr)_280px] md:p-8">
             <div>
