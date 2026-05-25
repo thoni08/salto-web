@@ -17,6 +17,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { fetchThreads, mapApiThreadListItem } from "../services/saltoApi.js";
 import { getAuthUser } from "../services/authStorage.js";
+import { showToast } from "../utils/toast.js";
 import {
   FooterSection,
   ThreadCardSkeleton,
@@ -152,6 +153,7 @@ export default function ThreadPage() {
   const [isThreadLoading, setIsThreadLoading] = useState(true);
   const [threadLoadError, setThreadLoadError] = useState("");
   const authUser = useMemo(() => getAuthUser(), []);
+  const isAuthenticated = Boolean(authUser);
   const [liveSessions, setLiveSessions] = useState(() =>
     upcomingLives.map((item, index) => ({
       ...item,
@@ -257,6 +259,15 @@ export default function ThreadPage() {
   );
 
   const canLoadMore = visibleThreads.length < filteredThreads.length;
+
+  const handleOpenAlumniProfile = () => {
+    if (isAuthenticated) return true;
+    showToast("Masuk dulu untuk melihat profil alumni ini, ya.", {
+      type: "warning",
+    });
+    navigate("/login");
+    return false;
+  };
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -524,9 +535,19 @@ export default function ThreadPage() {
 
               <div className="mt-4 space-y-4">
                 {topAlumni.map((person) => (
-                  <article
+                  <Link
                     key={person.name}
-                    className="flex h-10 items-center gap-3">
+                    to={person.userName ? `/u/${encodeURIComponent(person.userName)}` : "#"}
+                    onClick={(event) => {
+                      if (!person.userName) {
+                        event.preventDefault();
+                        return;
+                      }
+                      if (handleOpenAlumniProfile() === false) {
+                        event.preventDefault();
+                      }
+                    }}
+                    className="flex h-10 items-center gap-3 rounded-xl transition hover:bg-[#f9fafb]">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-[#dbe2f1] bg-[#f8fafc] text-[12px] font-bold text-(--color-like-blue)">
                       {getInitials(person.name)}
                     </div>
@@ -544,7 +565,7 @@ export default function ThreadPage() {
                       }`}>
                       {badgeMeta(person.badge).label}
                     </span>
-                  </article>
+                  </Link>
                 ))}
               </div>
 

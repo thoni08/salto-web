@@ -535,6 +535,19 @@ export async function fetchRelatedThreads(threadId) {
   return apiClient.get(`/api/threads/${threadId}/related`);
 }
 
+export async function createThread({ title, content, tags } = {}) {
+  const payload = {
+    title: String(title || "").trim(),
+    content: String(content || "").trim(),
+  };
+
+  if (Array.isArray(tags) && tags.length > 0) {
+    payload.tags = tags;
+  }
+
+  return apiClient.post("/api/threads", payload);
+}
+
 export async function fetchCurrentUser() {
   return apiClient.get("/api/user");
 }

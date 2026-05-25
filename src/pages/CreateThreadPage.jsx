@@ -8,15 +8,15 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { getAuthUser } from "../services/authStorage.js";
+import { createThread } from "../services/saltoApi.js";
 import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
 import {
   socialLinks,
-  threadCreateAudienceOptions,
   threadCreateCategoryOptions,
   threadListItems,
 } from "./thread-detail/data";
 
-const MAX_CATEGORY_SELECTION = 3;
+const MAX_CATEGORY_SELECTION = 4;
 
 function sanitizeTags(tags) {
   return tags
@@ -40,17 +40,15 @@ export default function CreateThreadPage() {
     return true;
   }, [authUser]);
   const [title, setTitle] = useState("");
-  const [audience, setAudience] = useState(
-    threadCreateAudienceOptions[0] || "Mahasiswa",
-  );
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [content, setContent] = useState("");
   const [feedback, setFeedback] = useState("");
   const [isErrorFeedback, setIsErrorFeedback] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const suggestedTitles = useMemo(() => buildSuggestedTitles(), []);
 
-  const canSubmit = selectedCategories.length > 0;
+  const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
   const toggleCategory = (category) => {
     if (!isStudent) return; // only students can modify categories
@@ -60,9 +58,7 @@ export default function CreateThreadPage() {
       }
 
       if (previous.length >= MAX_CATEGORY_SELECTION) {
-        setFeedback(
-          `Maksimal ${MAX_CATEGORY_SELECTION} kategori untuk satu thread.`,
-        );
+        setFeedback(`Maksimal ${MAX_CATEGORY_SELECTION} tag untuk satu thread.`);
         setIsErrorFeedback(true);
         return previous;
       }
@@ -73,7 +69,7 @@ export default function CreateThreadPage() {
     });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!isStudent) {
@@ -84,29 +80,48 @@ export default function CreateThreadPage() {
 
     const sanitizedTitle = title.trim();
     const sanitizedContent = content.trim();
-    const sanitizedCategories = sanitizeTags(selectedCategories);
+    const sanitizedTags = sanitizeTags(selectedCategories);
 
-    if (sanitizedCategories.length === 0) {
-      setFeedback("Pilih minimal satu kategori.");
+    if (!sanitizedTitle || !sanitizedContent) {
+      setFeedback("Judul dan isi thread wajib diisi.");
       setIsErrorFeedback(true);
       return;
     }
 
-    setFeedback(
-      "Thread baru berhasil dibuat (mode demo). Mengarahkan ke daftar diskusi...",
-    );
-    setIsErrorFeedback(false);
-    navigate("/thread", {
-      replace: false,
-      state: {
-        draftThread: {
-          title: sanitizedTitle,
-          audience,
-          categories: sanitizedCategories,
-          content: sanitizedContent,
-        },
-      },
-    });
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      setFeedback("");
+      setIsErrorFeedback(false);
+
+      const response = await createThread({
+        title: sanitizedTitle,
+        content: sanitizedContent,
+        tags: sanitizedTags,
+      });
+      const payload = response?.data || response;
+      const createdThread = payload?.data || payload?.thread || payload;
+      const createdId = createdThread?.id;
+
+      if (createdId) {
+        navigate(`/thread/${createdId}`);
+        return;
+      }
+
+      setFeedback("Thread berhasil dibuat. Mengarahkan ke daftar diskusi...");
+      setIsErrorFeedback(false);
+      navigate("/thread");
+    } catch (error) {
+      setFeedback(
+        error instanceof Error
+          ? error.message
+          : "Gagal membuat thread. Silakan coba lagi.",
+      );
+      setIsErrorFeedback(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -160,28 +175,8 @@ export default function CreateThreadPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="space-y-2">
-                <label
-                  htmlFor="thread-audience"
-                  className="text-[14px] font-semibold text-(--color-dark)">
-                  Ditujukan Untuk
-                </label>
-                <select
-                  id="thread-audience"
-                  value={audience}
-                  onChange={(event) => setAudience(event.target.value)}
-                  disabled={!isStudent}
-                  className="h-12 w-full rounded-xl border border-[#dbe2f1] bg-white px-4 text-[14px] text-(--color-dark) outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)/60">
-                  {threadCreateAudienceOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
                 <p className="text-[14px] font-semibold text-(--color-dark)">
-                  Kategori
+                  Tags (Opsional)
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {threadCreateCategoryOptions.map((category) => {
@@ -203,7 +198,7 @@ export default function CreateThreadPage() {
                   })}
                 </div>
                 <p className="text-[12px] text-(--color-secondary)">
-                  Pilih 1-{MAX_CATEGORY_SELECTION} kategori.
+                  Pilih maksimal {MAX_CATEGORY_SELECTION} tag.
                 </p>
               </div>
             </div>
@@ -257,10 +252,10 @@ export default function CreateThreadPage() {
               </p>
               <button
                 type="submit"
-                disabled={!canSubmit || !isStudent}
+                disabled={!canSubmit || !isStudent || isSubmitting}
                 className="inline-flex items-center gap-2 rounded-full bg-[#25343f] px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[#1f2c35] disabled:cursor-not-allowed disabled:opacity-55">
                 <SendHorizontal className="h-4 w-4" />
-                Publikasikan Thread
+                {isSubmitting ? "Memproses..." : "Publikasikan Thread"}
               </button>
             </div>
           </form>

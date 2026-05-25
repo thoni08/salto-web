@@ -20,16 +20,19 @@ export const threadFilters = ["Semua", "Mahasiswa", "Alumni", "Badge Khusus"];
 export const topAlumni = [
   {
     name: "Ahmad Fauzi, S.Kom",
+    userName: "ahmadfauzi",
     subtitle: "Software Engineer at TechNova",
     badge: "top",
   },
   {
     name: "Siti Aminah, M.B.A",
+    userName: "sitiaminah",
     subtitle: "HR Manager at MegaBank",
     badge: "mentor",
   },
   {
     name: "Reza Rahardian, S.T",
+    userName: "rezarahardian",
     subtitle: "Project Manager at BuildIt",
     badge: "expert",
   },
