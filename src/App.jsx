@@ -12,9 +12,11 @@ import {
   UserCheck,
   Users
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SiteHeader } from "./components/SiteHeader.jsx";
 import { getAuthUser } from "./services/authStorage.js";
+import { fetchThreads, mapApiThreadListItem } from "./services/saltoApi.js";
 import { FooterSection } from "./pages/thread-detail/components/FooterSection.jsx";
 import { socialLinks, trendingThreads } from "./pages/thread-detail/data";
 
@@ -105,6 +107,72 @@ const upcomingCards = [
 
 function App() {
   const authUser = getAuthUser();
+  const [homeTrendingThreads, setHomeTrendingThreads] = useState(trendingThreads);
+
+  useEffect(() => {
+    let active = true;
+
+    function mapHomeTrendingThread(thread, index) {
+      const mappedThread = mapApiThreadListItem(thread, index);
+      return {
+        id: mappedThread.id,
+        title: mappedThread.title,
+        tags: mappedThread.tags.map((tag) => tag.label),
+        author: mappedThread.author,
+        role: mappedThread.authorMeta,
+        reactions: mappedThread.stats.likes,
+        views: `${mappedThread.stats.comments} komentar`,
+        age: mappedThread.postedAgo,
+      };
+    }
+
+    function getTrendingScore(thread) {
+      const stats = thread?.stats || {};
+      const upvotes = Number(stats.totalUpvotes ?? stats.upvotes ?? stats.likes ?? 0);
+      const answers = Number(stats.totalAnswers ?? stats.answers ?? stats.answerCount ?? 0);
+      const views = Number(stats.totalViews ?? stats.views ?? stats.viewCount ?? 0);
+      return upvotes * 3 + answers * 2 + views;
+    }
+
+    async function loadTrendingThreads() {
+      try {
+        let response;
+
+        try {
+          response = await fetchThreads({
+            page: 1,
+            limit: 3,
+            sortBy: "trending",
+          });
+        } catch {
+          response = await fetchThreads({
+            page: 1,
+            limit: 25,
+          });
+        }
+
+        const data = Array.isArray(response?.data) ? response.data : [];
+        const source = [...data]
+          .sort((left, right) => getTrendingScore(right) - getTrendingScore(left))
+          .slice(0, 3)
+        const mapped = source.map(mapHomeTrendingThread);
+
+        if (active && mapped.length > 0) {
+          setHomeTrendingThreads(mapped);
+        }
+      } catch {
+        if (active) {
+          setHomeTrendingThreads(trendingThreads);
+        }
+      }
+    }
+
+    loadTrendingThreads();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-(--color-dark)">
@@ -238,7 +306,7 @@ function App() {
             </div>
 
             <div className="mt-5 grid gap-6 lg:grid-cols-3">
-              {trendingThreads.map((thread) => (
+              {homeTrendingThreads.map((thread) => (
                 <Link
                   key={thread.id}
                   to={`/thread/${thread.id}`}

@@ -44,6 +44,7 @@ function normalizeReply(reply, answerId, fallbackText) {
     return {
       id: `${answerId}-reply-${Date.now()}`,
       author: "Kamu",
+      authorAvatar: "",
       role: "Member",
       text: fallbackText,
       createdAt: formatReplyCreatedAt(),
@@ -60,6 +61,10 @@ function normalizeReply(reply, answerId, fallbackText) {
       typeof reply.author === "string" && reply.author.trim()
         ? reply.author.trim()
         : "Kamu",
+    authorAvatar:
+      typeof reply.authorAvatar === "string" && reply.authorAvatar.trim()
+        ? reply.authorAvatar.trim()
+        : "",
     role:
       typeof reply.role === "string" && reply.role.trim()
         ? reply.role.trim()
@@ -188,7 +193,11 @@ export function AnswerCard({
 
       <header className="flex items-start justify-between gap-3 px-5 pt-5">
         <div className="flex min-w-0 items-start gap-3">
-          <Avatar alt={safeAnswer.author} highlighted={safeAnswer.accent} />
+          <Avatar
+            alt={safeAnswer.author}
+            highlighted={safeAnswer.accent}
+            src={safeAnswer.authorAvatar}
+          />
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

@@ -18,6 +18,7 @@ import { SiteHeader } from "../components/SiteHeader.jsx";
 import { fetchThreads, mapApiThreadListItem } from "../services/saltoApi.js";
 import { getAuthUser } from "../services/authStorage.js";
 import {
+  Avatar,
   FooterSection,
   ThreadCardSkeleton,
 } from "./thread-detail/components";
@@ -405,9 +406,11 @@ export default function ThreadPage() {
                     </div>
 
                     <div className="mt-4 flex gap-4">
-                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#e2e8f0] bg-[#f8fafc] text-[13px] font-bold text-(--color-like-blue)">
-                        {getInitials(thread.author)}
-                      </div>
+                      <Avatar
+                        alt={thread.author}
+                        src={thread.authorAvatar}
+                        size="lg"
+                      />
 
                       <div className="min-w-0 flex-1 space-y-3">
                         <div className="space-y-1.5">

@@ -6,6 +6,7 @@
  * @typedef {Object} Reply
  * @property {string} id
  * @property {string} author
+ * @property {string} [authorAvatar]
  * @property {string} role
  * @property {string} text
  * @property {string} createdAt
@@ -16,6 +17,7 @@
  * @typedef {Object} Answer
  * @property {string} id
  * @property {string} author
+ * @property {string} [authorAvatar]
  * @property {string} [authorRole]
  * @property {string} [authorId]
  * @property {boolean} [currentUserLiked]
@@ -40,6 +42,7 @@
  * @typedef {Object} Contributor
  * @property {string} id
  * @property {string} name
+ * @property {string} [avatar]
  * @property {string} role
  * @property {string} org
  * @property {string} [userNameRaw]
