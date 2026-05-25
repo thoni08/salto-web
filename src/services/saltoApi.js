@@ -249,6 +249,10 @@ function buildThreadListItem(thread, index = 0) {
     stats.totalAnswers ?? stats.answers ?? stats.answerCount,
     0,
   );
+  const totalUpvotes = toNumber(
+    stats.totalUpvotes ?? stats.upvotes ?? stats.likes,
+    Math.max(0, Math.round(totalViews / 25)),
+  );
 
   return {
     id: String(thread?.id ?? index + 1),
@@ -256,13 +260,14 @@ function buildThreadListItem(thread, index = 0) {
     title: String(thread?.title || "Tanpa Judul"),
     excerpt: buildExcerpt(thread?.content),
     author: author.fullName || author.userName || "Anonim",
+    authorAvatar: author.Avatar || author.avatar || "",
     roleLabel: normalizeRoleLabel(author.role),
     authorMeta: buildAuthorMeta(author),
     postedAgo: formatRelativeTime(thread?.createdAt),
     tags: buildThreadTags(thread?.tags),
     stats: {
       comments: totalAnswers,
-      likes: Math.max(0, Math.round(totalViews / 25)),
+      likes: totalUpvotes,
     },
   };
 }
@@ -356,6 +361,7 @@ function buildContributorsFromParticipants(participantSummary = {}) {
     return {
       id: String(participant?.id || `contributor-${index + 1}`),
       name: nameValue,
+      avatar: participant?.Avatar || participant?.avatar || "",
       role: roleValue,
       org: fieldValue,
       userNameRaw,
@@ -415,6 +421,7 @@ export function mapApiThreadDetail(thread, fallback = {}) {
         author.userName ||
         fallback.threadHeader?.author ||
         "Anonim",
+      authorAvatar: author.Avatar || author.avatar || fallback.threadHeader?.authorAvatar || "",
       role:
         normalizeRoleLabel(author.role) ||
         fallback.threadHeader?.role ||
@@ -510,6 +517,7 @@ export async function fetchThreads({
   limit = 100,
   searchTerm = "",
   authorType = "",
+  sortBy = "",
 } = {}) {
   const params = {
     page: String(page),
@@ -524,6 +532,10 @@ export async function fetchThreads({
     params.authorType = authorType.trim();
   }
 
+  if (sortBy.trim()) {
+    params.sortBy = sortBy.trim();
+  }
+
   return apiClient.get("/api/threads", { params });
 }
 
@@ -533,6 +545,10 @@ export async function fetchThreadById(threadId) {
 
 export async function fetchRelatedThreads(threadId) {
   return apiClient.get(`/api/threads/${threadId}/related`);
+}
+
+export async function deleteThread(threadId) {
+  return apiClient.delete(`/api/threads/${threadId}`);
 }
 
 export async function fetchCurrentUser() {

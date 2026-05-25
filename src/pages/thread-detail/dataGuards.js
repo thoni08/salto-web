@@ -33,6 +33,7 @@ function sanitizeReply(reply, answerId, index) {
   return {
     id: ensureString(safeReply.id, `${answerId}-reply-${index + 1}`),
     author: ensureString(safeReply.author, "Pengguna"),
+    authorAvatar: ensureString(safeReply.authorAvatar, ""),
     role: ensureString(safeReply.role, "Member"),
     text: stripInlineMarkdown(
       ensureString(safeReply.text, "Balasan belum tersedia."),
@@ -60,6 +61,7 @@ export function sanitizeAnswer(answer, index = 0) {
   return {
     id,
     author: ensureString(safeAnswer.author, "Anonim"),
+    authorAvatar: ensureString(safeAnswer.authorAvatar, ""),
     authorRole: ensureString(safeAnswer.authorRole, ""),
     authorId: ensureString(safeAnswer.authorId, ""),
     currentUserLiked: Boolean(safeAnswer.currentUserLiked),
@@ -91,6 +93,7 @@ export function sanitizeContributor(contributor, index = 0) {
   return {
     id: ensureString(safeContributor.id, `contributor-${index + 1}`),
     name: ensureString(safeContributor.name, "Kontributor"),
+    avatar: ensureString(safeContributor.avatar, ""),
     role: ensureString(safeContributor.role, "Role belum tersedia"),
     org: ensureString(safeContributor.org, "Organisasi belum tersedia"),
     userNameRaw: ensureString(safeContributor.userNameRaw, ""),

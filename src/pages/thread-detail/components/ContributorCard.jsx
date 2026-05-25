@@ -40,7 +40,7 @@ export function ContributorCard({
       className={`block rounded-xl ${profileHref ? "cursor-pointer hover:bg-[#f9fafb]/80" : ""}`}>
       <article className="space-y-3 p-1">
         <div className="flex items-start gap-3">
-          <Avatar alt={safeContributor.name} />
+          <Avatar alt={safeContributor.name} src={safeContributor.avatar} />
 
           <div className="min-w-0">
             <p className="text-[13px] leading-5 font-bold text-[#101828]">

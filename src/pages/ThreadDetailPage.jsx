@@ -111,6 +111,7 @@ function normalizeAuthUser(rawUser) {
       source.username ||
       "",
     userName: source.userName || source.username || "",
+    avatar: source.Avatar || source.avatar || "",
     role: source.role || "",
     field: source.field || "",
     email: source.email || "",
@@ -334,6 +335,7 @@ export default function ThreadDetailPage() {
     return {
       id: String(reply?.id || `reply-${Date.now()}`),
       author: String(author?.fullName || author?.userName || "Pengguna"),
+      authorAvatar: String(author?.Avatar || author?.avatar || ""),
       role: role || "Member",
       text: stripInlineMarkdown(reply?.content || reply?.text),
       createdAt: reply?.createdAt
@@ -355,6 +357,7 @@ export default function ThreadDetailPage() {
         id: String(comment?.id || `comment-${Date.now()}`),
         authorId: String(comment?.authorId || author?.id || ""),
         author: String(author?.fullName || author?.userName || "Anonim"),
+        authorAvatar: String(author?.Avatar || author?.avatar || ""),
         authorRole: role,
         accent: Boolean(comment?.isBestAnswer),
         isBestAnswer: Boolean(comment?.isBestAnswer),
@@ -542,6 +545,7 @@ export default function ThreadDetailPage() {
   const viewerProfile = useMemo(
     () => ({
       name: authUser?.fullName || authUser?.userName || currentViewer.name,
+      avatar: authUser?.avatar || authUser?.Avatar || currentViewer.avatar || "",
       role: authUser?.role || currentViewer.role,
       subtitle: authUser?.field || authUser?.email || currentViewer.subtitle,
     }),
@@ -599,6 +603,8 @@ export default function ThreadDetailPage() {
         answer: {
           id: String(comment?.id || `local-${Date.now()}`),
           author: author?.fullName || author?.userName || viewerProfile.name,
+          authorAvatar:
+            author?.Avatar || author?.avatar || viewerProfile.avatar || "",
           authorRole: author?.role || viewerProfile.role,
           accent: false,
           subtitle: author?.field || viewerProfile.subtitle,
@@ -661,6 +667,9 @@ export default function ThreadDetailPage() {
       id: String(source?.id || `reply-${Date.now()}`),
       author: String(
         author?.fullName || author?.userName || viewerProfile.name || "Kamu",
+      ),
+      authorAvatar: String(
+        author?.Avatar || author?.avatar || viewerProfile.avatar || "",
       ),
       role: String(author?.role || viewerProfile.role || "Member"),
       text: stripInlineMarkdown(source?.content || source?.text || fallbackText),
@@ -897,7 +906,10 @@ export default function ThreadDetailPage() {
               </h1>
 
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <Avatar alt={threadHeader.author} />
+                <Avatar
+                  alt={threadHeader.author}
+                  src={threadHeader.authorAvatar}
+                />
                 <div>
                   <p className="text-[14px] leading-5 font-bold text-(--color-dark)">
                     {threadHeader.author}

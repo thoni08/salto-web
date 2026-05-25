@@ -1,11 +1,9 @@
-import { Briefcase, GraduationCap, Link2, Mail, Share2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { getAuthToken, updateAuthUser } from "../services/authStorage.js";
-import { updateUserProfile } from "../services/saltoApi.js";
-import { Icon } from "./thread-detail/components/index.js";
+import { fetchCurrentUser, updateUserProfile } from "../services/saltoApi.js";
 import { ProfileEditModal } from "./ProfilePage.jsx";
-import { useNavigate } from "react-router-dom";
 
 function normalizeProfileData(rawData) {
   const source = rawData?.data || rawData?.user || rawData || {};
@@ -62,13 +60,8 @@ export default function ProfileEditPage() {
         const token = getAuthToken();
         if (!token) throw new Error("Kamu perlu login terlebih dulu.");
 
-        const res = await fetch("https://salto-be.aauaah.tech/api/user/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) throw new Error("Gagal memuat data profil");
-
-        const json = await res.json();
+        const response = await fetchCurrentUser();
+        const json = response?.data || response;
         setProfileData(normalizeProfileData(json));
         setError("");
       } catch (err) {
@@ -122,23 +115,15 @@ export default function ProfileEditPage() {
   return (
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-316 px-4 pb-12 pt-6 lg:px-0">
-        <section className="px-8 py-6">
-          <h1 className="text-[24px] font-bold">Edit Profil</h1>
-          <p className="mt-2 text-[13px] text-(--color-secondary)">Perbarui data profil Anda di halaman ini.</p>
-        </section>
-
-        <section className="mt-6">
-          <div className="rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5">
-            <ProfileEditModal
-              profile={profileData}
-              onClose={() => navigate(-1)}
-              onSave={async (payload) => {
-                await _handleSave(payload);
-              }}
-            />
-          </div>
-        </section>
+      <main className="mx-auto w-full max-w-2xl px-4 pb-12 pt-10">
+        <ProfileEditModal
+          profile={profileData}
+          variant="inline"
+          onClose={() => navigate(-1)}
+          onSave={async (payload) => {
+            await _handleSave(payload);
+          }}
+        />
       </main>
     </div>
   );

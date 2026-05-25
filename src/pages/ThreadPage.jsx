@@ -15,9 +15,14 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
+import {
+  LIVE_COMING_SOON_LABEL,
+  LIVE_FEATURE_ENABLED,
+} from "../config/features.js";
 import { fetchThreads, mapApiThreadListItem } from "../services/saltoApi.js";
 import { getAuthUser } from "../services/authStorage.js";
 import {
+  Avatar,
   FooterSection,
   ThreadCardSkeleton,
 } from "./thread-detail/components";
@@ -105,7 +110,7 @@ function UpcomingLiveCard({
               <span>{creator}</span>
             </div>
             <span className="rounded-full bg-[#f04343] px-1.75 py-px text-[12px] leading-4 font-bold text-white">
-              LIVE
+              {LIVE_FEATURE_ENABLED ? "LIVE" : "SOON"}
             </span>
           </div>
 
@@ -128,13 +133,20 @@ function UpcomingLiveCard({
 
           <button
             type="button"
-            onClick={onToggleRegister}
+            onClick={LIVE_FEATURE_ENABLED ? onToggleRegister : undefined}
+            disabled={!LIVE_FEATURE_ENABLED}
             className={`h-7 rounded-full px-3 text-[12px] leading-4 font-semibold transition ${
-              isRegistered
+              !LIVE_FEATURE_ENABLED
+                ? "cursor-not-allowed border border-[#d8dcef] bg-[#f8fafc] text-(--color-secondary)"
+                : isRegistered
                 ? "border border-[#25343f] bg-white text-[#25343f] hover:bg-[#f8fafc]"
                 : "bg-(--color-dark) text-white hover:opacity-90"
             }`}>
-            {isRegistered ? "Batal" : cta}
+            {!LIVE_FEATURE_ENABLED
+              ? LIVE_COMING_SOON_LABEL
+              : isRegistered
+                ? "Batal"
+                : cta}
           </button>
         </div>
       </div>
@@ -405,9 +417,11 @@ export default function ThreadPage() {
                     </div>
 
                     <div className="mt-4 flex gap-4">
-                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#e2e8f0] bg-[#f8fafc] text-[13px] font-bold text-(--color-like-blue)">
-                        {getInitials(thread.author)}
-                      </div>
+                      <Avatar
+                        alt={thread.author}
+                        src={thread.authorAvatar}
+                        size="lg"
+                      />
 
                       <div className="min-w-0 flex-1 space-y-3">
                         <div className="space-y-1.5">
@@ -559,7 +573,7 @@ export default function ThreadPage() {
               <header className="flex h-7 items-center gap-2">
                 <Radio className="h-5 w-5 text-(--color-like-blue)" />
                 <h3 className="text-lg font-bold text-(--color-dark)">
-                  Live Mendatang
+                  {LIVE_FEATURE_ENABLED ? "Live Mendatang" : "Live Coming Soon"}
                 </h3>
               </header>
 

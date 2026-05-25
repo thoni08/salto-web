@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { getInitials } from "./avatarUtils";
 
-export function Avatar({ alt, size = "md", highlighted = false }) {
+export function Avatar({ alt, size = "md", highlighted = false, src = "" }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const sizeClass =
     size === "sm"
       ? "h-8 w-8 text-xs"
@@ -13,9 +15,18 @@ export function Avatar({ alt, size = "md", highlighted = false }) {
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full border-2 bg-[--color-light-blue] text-[--color-primary] font-bold select-none ${sizeClass} ${borderClass}`}
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-[--color-light-blue] text-[--color-primary] font-bold select-none ${sizeClass} ${borderClass}`}
       aria-label={alt}>
-      {getInitials(alt)}
+      {src && !imageFailed ? (
+        <img
+          src={src}
+          alt={alt}
+          onError={() => setImageFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        getInitials(alt)
+      )}
     </div>
   );
 }
