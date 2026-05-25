@@ -10,7 +10,8 @@ export function MobileNavbar() {
   const scrollDirection = useScrollDirection();
   const isAuthenticated = Boolean(getAuthToken());
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
   const navItems = [
     { path: "/", icon: Home, label: "Beranda" },
@@ -20,8 +21,10 @@ export function MobileNavbar() {
 
   return (
     <nav
-      className={`fixed left-1/2 z-50 grid w-[calc(100%-3rem)] max-w-sm -translate-x-1/2 grid-cols-4 items-center gap-1 rounded-4xl border border-(--color-light-blue)/70 bg-white/90 px-2 py-2.5 shadow-lg shadow-(--color-light-blue)/30 backdrop-blur-md transition-all duration-300 md:hidden ${
-        scrollDirection === "down" ? "-bottom-25" : "bottom-6"
+      className={`fixed left-3 right-3 z-50 mx-auto grid max-w-[430px] grid-cols-4 items-center gap-1 rounded-[28px] border border-[#dbe4f3] bg-white/95 px-2 py-2 shadow-[0_18px_44px_-22px_rgba(10,38,71,0.55)] backdrop-blur-xl transition-all duration-300 md:hidden ${
+        scrollDirection === "down"
+          ? "-bottom-28"
+          : "bottom-[calc(0.75rem+env(safe-area-inset-bottom))]"
       }`}
       aria-label="Mobile navigation">
       {navItems.map(({ path, icon, label, disabled }) => {
@@ -31,16 +34,13 @@ export function MobileNavbar() {
           <Link
             key={path}
             to={path}
-            className={`mx-auto flex w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-all ${
+            className={`relative mx-auto flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1.5 transition-all ${
               active
-                ? "text-(--color-like-blue) relative"
-                : "text-(--color-secondary) hover:text-(--color-dark)"
+                ? "bg-[#eef4ff] text-(--color-like-blue)"
+                : "text-(--color-secondary) hover:bg-[#f8fbff] hover:text-(--color-dark)"
             }`}
             aria-current={active ? "page" : undefined}
             title={label}>
-            {active && (
-              <span className="absolute -top-1.5 left-1/2 h-1 w-5 -translate-x-1/2 rounded-full bg-(--color-like-blue)" />
-            )}
             <Icon
               icon={icon}
               className={`h-5 w-5 ${active ? "stroke-[2.5px]" : "stroke-[1.8px]"}`}
@@ -58,18 +58,15 @@ export function MobileNavbar() {
         );
       })}
 
-      <a
-        href="#"
-        className={`mx-auto flex w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-all ${
+      <Link
+        to={isAuthenticated ? "/profile" : "/login"}
+        className={`relative mx-auto flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1.5 transition-all ${
           isActive("/profile") || isActive("/login")
-            ? "text-(--color-like-blue) relative"
-            : "text-(--color-secondary) hover:text-(--color-dark)"
+            ? "bg-[#eef4ff] text-(--color-like-blue)"
+            : "text-(--color-secondary) hover:bg-[#f8fbff] hover:text-(--color-dark)"
         }`}
         title={isAuthenticated ? "Profil" : "Masuk"}
         aria-label={isAuthenticated ? "Profil" : "Masuk"}>
-        {(isActive("/profile") || isActive("/login")) && (
-          <span className="absolute -top-1.5 left-1/2 h-1 w-5 -translate-x-1/2 rounded-full bg-(--color-like-blue)" />
-        )}
         <Icon
           icon={isAuthenticated ? User : LogIn}
           className={`h-5 w-5 ${isActive("/profile") || isActive("/login") ? "stroke-[2.5px]" : "stroke-[1.8px]"}`}
@@ -78,7 +75,7 @@ export function MobileNavbar() {
           className={`text-[10px] ${isActive("/profile") || isActive("/login") ? "font-bold" : "font-medium"}`}>
           {isAuthenticated ? "Profil" : "Masuk"}
         </span>
-      </a>
+      </Link>
     </nav>
   );
 }

@@ -327,10 +327,10 @@ export default function ThreadPage() {
       />
 
       <main className="mx-auto w-full max-w-316 px-4 pt-6 lg:px-0">
-        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,916px)_320px]">
-          <section>
-            <header className="h-25">
-              <h1 className="text-[38px] leading-[1.15] font-bold text-(--color-dark)">
+        <div className="grid min-w-0 items-start gap-7 lg:grid-cols-[minmax(0,916px)_320px]">
+          <section className="min-w-0">
+            <header className="pt-1 sm:pt-0">
+              <h1 className="max-w-180 text-[30px] leading-[1.12] font-bold text-(--color-dark) sm:text-[38px]">
                 Diskusi Terbaru
               </h1>
 
@@ -399,8 +399,8 @@ export default function ThreadPage() {
                     onKeyDown={(event) =>
                       handleThreadCardKeyDown(event, thread.id)
                     }
-                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)`}>
-                    <div className="flex items-center gap-2.5">
+                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-4 py-4 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue) sm:px-6 sm:py-5`}>
+                      <div className="flex flex-wrap items-center gap-2.5">
                       {thread.badges.map((badge) => {
                         const meta = threadBadgeMeta(badge.type);
                         const Icon = meta.icon;
@@ -416,11 +416,12 @@ export default function ThreadPage() {
                       })}
                     </div>
 
-                    <div className="mt-4 flex gap-4">
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:gap-4">
                       <Avatar
                         alt={thread.author}
                         src={thread.authorAvatar}
                         size="lg"
+                        className="shrink-0 self-start"
                       />
 
                       <div className="min-w-0 flex-1 space-y-3">
@@ -451,7 +452,7 @@ export default function ThreadPage() {
                           </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex flex-wrap gap-2">
                             {thread.tags.map((tag) => (
                               <span
@@ -462,7 +463,7 @@ export default function ThreadPage() {
                             ))}
                           </div>
 
-                          <div className="flex items-center gap-3 text-[14px] leading-5 font-medium text-(--color-secondary)">
+                          <div className="flex items-center gap-3 text-[14px] leading-5 font-medium text-(--color-secondary) sm:shrink-0">
                             <span className="inline-flex items-center gap-1.5">
                               <MessageCircle className="h-4 w-4" />
                               {thread.stats.comments}
@@ -513,14 +514,14 @@ export default function ThreadPage() {
                       ),
                     )
                   }
-                  className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
+                  className="mt-4 inline-flex h-10.25 w-full items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc] sm:w-auto">
                   Muat Lebih Banyak <ChevronDown className="h-3 w-3" />
                 </button>
               ) : null}
             </div>
           </section>
 
-          <aside className="space-y-6">
+          <aside className="min-w-0 space-y-6">
             <Link
               to="/thread/create"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25343f] px-4 text-[16px] leading-6 font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition hover:bg-[#1f2c35]">
