@@ -6,11 +6,20 @@ import {
   getAuthToken,
   getAuthUser,
 } from "../services/authStorage.js";
+import {
+  LIVE_COMING_SOON_LABEL,
+  LIVE_FEATURE_ENABLED,
+} from "../config/features.js";
 
 const defaultNavItems = [
   { label: "Beranda", href: "/" },
   { label: "Diskusi", href: "/thread" },
-  { label: "Live", href: "/live" },
+  {
+    label: "Live",
+    href: "/live",
+    disabled: !LIVE_FEATURE_ENABLED,
+    badge: !LIVE_FEATURE_ENABLED ? LIVE_COMING_SOON_LABEL : "",
+  },
 ];
 
 function getAvatarUrl(user) {
@@ -35,7 +44,11 @@ export function SiteHeader({
 }) {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [sessionUser, setSessionUser] = useState(() => user ?? getAuthUser());
+  const [sessionUser, setSessionUser] = useState(() => {
+    const token = getAuthToken();
+    if (!token) return null;
+    return user ?? getAuthUser();
+  });
   const [avatarLoaded, setAvatarLoaded] = useState(false);
 
   useEffect(() => {
@@ -47,7 +60,7 @@ export function SiteHeader({
 
       if (!token) {
         if (isMounted) {
-          setSessionUser(storedUser);
+          setSessionUser(null);
         }
         return;
       }
@@ -106,7 +119,14 @@ export function SiteHeader({
   };
 
   const avatarSrc = getAvatarUrl(sessionUser);
-  const hasSession = Boolean(sessionUser || getAuthToken());
+  const hasSession = Boolean(getAuthToken());
+  const resolvedAuthActions =
+    !hasSession && authActions.length === 0
+      ? [
+          { label: "Masuk", to: "/login", variant: "outline" },
+          { label: "Daftar", to: "/signup", variant: "solid" },
+        ]
+      : authActions;
 
   useEffect(() => {
     setAvatarLoaded(false);
@@ -148,7 +168,14 @@ export function SiteHeader({
                     ? "font-bold text-(--color-dark)"
                     : "text-(--color-dark)"
                 }`}>
-                {item.label}
+                <span className="inline-flex items-center gap-1.5">
+                  {item.label}
+                  {item.badge ? (
+                    <span className="rounded-full bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#64748b]">
+                      Soon
+                    </span>
+                  ) : null}
+                </span>
               </Link>
             );
           })}
@@ -202,7 +229,7 @@ export function SiteHeader({
             </div>
           ) : (
             <>
-              {authActions.map((action) => {
+              {resolvedAuthActions.map((action) => {
                 const sharedClass =
                   "rounded-full px-5 py-2 text-[14px] leading-4.5 transition";
 

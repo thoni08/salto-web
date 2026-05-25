@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import { Icon } from "../pages/thread-detail/components/Icon";
 import { getAuthToken } from "../services/authStorage.js";
+import { LIVE_FEATURE_ENABLED } from "../config/features.js";
 
 export function MobileNavbar() {
   const location = useLocation();
@@ -14,7 +15,7 @@ export function MobileNavbar() {
   const navItems = [
     { path: "/", icon: Home, label: "Beranda" },
     { path: "/thread", icon: MessageSquare, label: "Diskusi" },
-    { path: "/live", icon: Radio, label: "Live" },
+    { path: "/live", icon: Radio, label: "Live", disabled: !LIVE_FEATURE_ENABLED },
   ];
 
   return (
@@ -23,7 +24,7 @@ export function MobileNavbar() {
         scrollDirection === "down" ? "-bottom-25" : "bottom-6"
       }`}
       aria-label="Mobile navigation">
-      {navItems.map(({ path, icon, label }) => {
+      {navItems.map(({ path, icon, label, disabled }) => {
         const active = isActive(path);
 
         return (
@@ -44,9 +45,14 @@ export function MobileNavbar() {
               icon={icon}
               className={`h-5 w-5 ${active ? "stroke-[2.5px]" : "stroke-[1.8px]"}`}
             />
-            <span
-              className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}>
-              {label}
+            <span className="relative">
+              <span
+                className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}>
+                {label}
+              </span>
+              {disabled ? (
+                <span className="absolute -right-2 -top-1 h-1.5 w-1.5 rounded-full bg-[#f59e0b]" />
+              ) : null}
             </span>
           </Link>
         );

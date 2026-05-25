@@ -46,6 +46,10 @@ export function setAuthSession({ token, user, rememberMe = false }) {
   if (user) {
     storage.setItem(USER_KEY, JSON.stringify(user));
   }
+
+  // Notify subscribers in the same tab (native `storage` event does not fire
+  // on the document that made the change).
+  window.dispatchEvent(new Event("storage"));
 }
 
 export function clearAuthSession() {

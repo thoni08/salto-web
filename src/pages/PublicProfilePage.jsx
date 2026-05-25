@@ -70,6 +70,26 @@ function formatDateId(value) {
   }).format(date);
 }
 
+function getFriendlyProfileErrorMessage(message, { isLoggedIn = false } = {}) {
+  const normalizedMessage = String(message || "").toLowerCase();
+  const looksLikeMissingTokenError =
+    normalizedMessage.includes("akses ditolak") ||
+    normalizedMessage.includes("token tidak ada") ||
+    normalizedMessage.includes("unauthorized") ||
+    normalizedMessage.includes("jwt") ||
+    normalizedMessage.includes("forbidden");
+
+  if (!looksLikeMissingTokenError) {
+    return message;
+  }
+
+  if (isLoggedIn) {
+    return "Profil alumni belum bisa dimuat saat ini. Coba refresh halaman atau masuk ulang ke akunmu.";
+  }
+
+  return "Profil alumni bisa kamu lihat setelah masuk. Silakan login dulu, ya.";
+}
+
 export default function PublicProfilePage() {
   const { userName } = useParams();
   const [profileData, setProfileData] = useState(null);
@@ -92,7 +112,10 @@ export default function PublicProfilePage() {
           throw new Error("Username tidak valid.");
         }
 
-        const response = await fetchUsersBySearchTerm(target, { page: 1, limit: 10 });
+        const response = await fetchUsersBySearchTerm(target, {
+          page: 1,
+          limit: 10,
+        });
         const payload = response?.data || response?.users || response || {};
         const list = Array.isArray(payload?.data)
           ? payload.data
@@ -118,7 +141,13 @@ export default function PublicProfilePage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Gagal memuat profil.");
+          const rawMessage =
+            err instanceof Error ? err.message : "Gagal memuat profil.";
+          setError(
+            getFriendlyProfileErrorMessage(rawMessage, {
+              isLoggedIn,
+            }),
+          );
           setProfileData(null);
         }
       } finally {
@@ -130,7 +159,7 @@ export default function PublicProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [userName]);
+  }, [isLoggedIn, userName]);
 
   const displayName = profileData?.fullName || "Profil";
   const displayRole = profileData?.role || "User";
@@ -182,10 +211,10 @@ export default function PublicProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
+    <div className="flex min-h-screen flex-col bg-(--color-gray) text-(--color-dark)">
       <SiteHeader />
 
-      <main className="mx-auto w-full max-w-7xl px-4 pb-12 pt-10 xl:px-0">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-12 pt-10 xl:px-0">
         {isLoading ? (
           <div className="rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-5 py-3 text-[13px] text-(--color-secondary)">
             Memuat profil...

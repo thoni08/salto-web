@@ -6,7 +6,7 @@ import { Icon } from "./Icon";
 export function ReplyItem({ reply }) {
   return (
     <article className="flex items-start gap-3">
-      <Avatar alt={reply.author} size="sm" />
+      <Avatar alt={reply.author} size="sm" src={reply.authorAvatar} />
       <div className="min-w-0 flex-1">
         <div className="rounded-2xl bg-(--color-gray) p-3">
           <div className="flex flex-wrap items-center gap-2 text-[12px] leading-4">

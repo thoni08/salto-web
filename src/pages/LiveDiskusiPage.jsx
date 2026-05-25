@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CalendarClock,
   Clock3,
   Info,
   MessageCircle,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "../components/SiteHeader.jsx";
 import { getAuthUser } from "../services/authStorage.js";
+import { LIVE_FEATURE_ENABLED } from "../config/features.js";
 import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
 import { socialLinks } from "./thread-detail/data";
 import { LiveChatMessage } from "./live-diskusi/components/index.js";
@@ -90,6 +92,73 @@ const upcomingSessions = [
 ];
 
 export default function LiveDiskusiPage() {
+  if (!LIVE_FEATURE_ENABLED) {
+    return <LiveComingSoonPage />;
+  }
+
+  return <LiveDiskusiExperience />;
+}
+
+function LiveComingSoonPage() {
+  const authUser = useMemo(() => getAuthUser(), []);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-[#f4f6fb] text-(--color-dark)">
+      <SiteHeader
+        activeHref="/live"
+        user={authUser}
+        authActions={[
+          { label: "Masuk", to: "/login", variant: "outline" },
+          { label: "Daftar", to: "/signup", variant: "solid" },
+        ]}
+      />
+
+      <main className="mx-auto w-full max-w-316 flex-1 px-4 py-10 lg:px-0">
+        <section className="overflow-hidden rounded-[28px] border border-[#dfe6f5] bg-white shadow-[0_20px_60px_-44px_rgba(37,52,63,0.6)]">
+          <div className="grid gap-8 p-6 md:grid-cols-[minmax(0,1fr)_280px] md:p-8">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1 text-[12px] font-bold text-[#4f46e5]">
+                <CalendarClock className="h-4 w-4" />
+                Coming Soon
+              </span>
+              <h1 className="mt-5 max-w-[18ch] text-[34px] font-black leading-tight text-[#0a2647] md:text-[44px]">
+                Live diskusi sedang disiapkan.
+              </h1>
+              <p className="mt-4 max-w-[62ch] text-[14px] leading-6 text-(--color-secondary)">
+                Sesi live bersama alumni akan kembali setelah fitur jadwal,
+                pendaftaran, dan chat real-time siap dipakai dengan stabil.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#e4eaf7] bg-[#f8fbff] p-5">
+              <p className="text-[13px] font-bold text-[#0a2647]">
+                Status fitur
+              </p>
+              <div className="mt-4 space-y-3 text-[13px] text-(--color-secondary)">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Halaman live</span>
+                  <span className="font-semibold text-[#f59e0b]">Soon</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Chat real-time</span>
+                  <span className="font-semibold text-[#f59e0b]">Soon</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Pendaftaran sesi</span>
+                  <span className="font-semibold text-[#f59e0b]">Soon</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <FooterSection socialLinks={socialLinks} />
+    </div>
+  );
+}
+
+function LiveDiskusiExperience() {
   const authUser = useMemo(() => getAuthUser(), []);
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
