@@ -15,6 +15,20 @@
   --color-gray: #f1f5f9;
 }
 
+@keyframes profileCardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+    filter: blur(2px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
 @layer base {
   html {
     min-height: 100%;
@@ -40,4 +54,28 @@
     background: rgba(119, 131, 212, 0.25);
     color: var(--color-dark);
   }
+
+  /* Button click/press effect applied globally to interactive buttons */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  .btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: transform 120ms cubic-bezier(.2,.9,.3,1), box-shadow 120ms ease, filter 120ms ease;
+    will-change: transform;
+  }
+
+  button:active,
+  [role="button"]:active,
+  input[type="button"]:active,
+  input[type="submit"]:active,
+  .btn:active {
+    transform: translateY(1px) scale(0.995);
+    filter: brightness(0.98);
+  }
+
+  /* Slightly reduce shadow while active to emphasize press */
+  button:active { box-shadow: 0 6px 12px rgba(37,52,63,0.08); }
 }

@@ -16,6 +16,10 @@
  * @typedef {Object} Answer
  * @property {string} id
  * @property {string} author
+ * @property {string} [authorRole]
+ * @property {string} [authorId]
+ * @property {boolean} [currentUserLiked]
+ * @property {boolean} [isBestAnswer]
  * @property {boolean} accent
  * @property {string} subtitle
  * @property {string} createdAt
@@ -38,6 +42,7 @@
  * @property {string} name
  * @property {string} role
  * @property {string} org
+ * @property {string} [userNameRaw]
  * @property {BadgeType[]} badges
  * @property {ContributorStats} stats
  */

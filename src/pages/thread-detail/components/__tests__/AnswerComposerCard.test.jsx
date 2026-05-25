@@ -29,14 +29,13 @@ describe("AnswerComposerCard", () => {
     expect(screen.queryByLabelText("Tulis jawaban")).not.toBeInTheDocument();
   });
 
-  it("validates min characters and calls submit handler", async () => {
+  it("requires non-empty content and calls submit handler", async () => {
     const submitHandler = vi.fn(() => ({ ok: true }));
 
     render(
       <AnswerComposerCard
         profile={profile}
         canAnswer={true}
-        minCharacters={100}
         onSubmit={submitHandler}
       />,
     );
@@ -44,16 +43,10 @@ describe("AnswerComposerCard", () => {
     const textarea = screen.getByLabelText("Tulis jawaban");
     const submitButton = screen.getByRole("button", { name: "Kirim Jawaban" });
 
-    fireEvent.change(textarea, { target: { value: "Jawaban pendek" } });
     expect(submitButton).toBeDisabled();
     expect(submitHandler).not.toHaveBeenCalled();
 
-    fireEvent.change(textarea, {
-      target: {
-        value:
-          "Ini jawaban yang panjang untuk memenuhi batas minimum karakter. Isinya membagikan pengalaman technical interview secara terstruktur dan praktis.",
-      },
-    });
+    fireEvent.change(textarea, { target: { value: "Jawaban pendek" } });
 
     expect(submitButton).toBeEnabled();
     fireEvent.click(submitButton);
@@ -61,9 +54,7 @@ describe("AnswerComposerCard", () => {
     await waitFor(() => {
       expect(submitHandler).toHaveBeenCalledTimes(1);
     });
-    expect(submitHandler).toHaveBeenCalledWith(
-      "Ini jawaban yang panjang untuk memenuhi batas minimum karakter. Isinya membagikan pengalaman technical interview secara terstruktur dan praktis.",
-    );
+    expect(submitHandler).toHaveBeenCalledWith("Jawaban pendek");
     expect(screen.getByText("Jawaban berhasil dikirim.")).toBeInTheDocument();
   });
 });

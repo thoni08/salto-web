@@ -451,7 +451,17 @@ function buildThreadDetailData(entry) {
     })),
     threadIntroParagraphs: [...detail.threadIntroParagraphs],
     answers: detail.rawAnswers.map((answer, index) =>
-      sanitizeAnswer(answer, index),
+      sanitizeAnswer(
+        {
+          ...answer,
+          authorRole:
+            answer?.authorRole ||
+            (answer?.accent || (answer?.badges?.length ?? 0) > 0
+              ? "Alumni"
+              : ""),
+        },
+        index,
+      ),
     ),
     contributors: detail.rawContributors.map((contributor, index) =>
       sanitizeContributor(contributor, index),
@@ -464,6 +474,32 @@ function buildThreadDetailData(entry) {
 export const threadListItems = THREAD_LIBRARY.map((entry) => ({
   ...entry.list,
 }));
+
+export const threadCreateAudienceOptions = threadFilters.filter(
+  (filter) => filter !== "Semua" && filter !== "Badge Khusus",
+);
+
+export const threadCreateCategoryOptions = [
+  ...new Set(
+    threadListItems.flatMap((thread) =>
+      thread.tags.map((tag) => tag.label.trim()),
+    ),
+  ),
+];
+
+export const trendingThreads = [...threadListItems]
+  .sort((left, right) => right.stats.likes - left.stats.likes)
+  .slice(0, 3)
+  .map((thread) => ({
+    id: thread.id,
+    title: thread.title,
+    tags: thread.tags.map((tag) => tag.label),
+    author: thread.author,
+    role: thread.authorMeta,
+    reactions: thread.stats.likes,
+    views: `${thread.stats.comments} komentar`,
+    age: thread.postedAgo,
+  }));
 
 export function getThreadDetailData(threadId) {
   const selectedEntry =
@@ -489,7 +525,7 @@ export const answerComposerProfile = {
   subtitle: currentViewer.subtitle,
 };
 
-export const answerComposerMinCharacters = 100;
+export const answerComposerMinCharacters = 1;
 
 export const answerComposerRestrictionMessage =
   "Platform ini mengutamakan jawaban dari alumni berpengalaman. Kamu bisa bertanya atau menambahkan pertanyaan lewat kolom balasan.";

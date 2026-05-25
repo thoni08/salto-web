@@ -1,8 +1,10 @@
-import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthField } from "../components/auth/AuthField.jsx";
 import { AuthShell } from "../components/auth/AuthShell.jsx";
+import { setAuthSession } from "../services/authStorage.js";
+import { loginUser } from "../services/saltoApi.js";
 
 function LoginPage() {
   const [formValues, setFormValues] = useState({
@@ -13,6 +15,8 @@ function LoginPage() {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
   const navigate = useNavigate();
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,13 +61,32 @@ function LoginPage() {
   const handleSubmit = (event) => {
     event.preventDefault();
     setSubmitted(true);
+    setServerError("");
 
     if (!formIsValid) {
       return;
     }
 
-    localStorage.setItem("authToken", "dummy-token-123");
-    navigate("/");
+    setIsLoading(true);
+
+    loginUser({
+      email: formValues.email,
+      password: formValues.password,
+    })
+      .then((response) => {
+        setAuthSession({
+          token: response.token,
+          user: response.user,
+          rememberMe: formValues.rememberMe,
+        });
+        navigate("/");
+      })
+      .catch((error) => {
+        setServerError(error.message || "Login gagal. Silakan coba lagi.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
@@ -184,9 +207,16 @@ function LoginPage() {
 
           <button
             type="submit"
+            disabled={isLoading}
             className="mt-1 h-12 w-full rounded-2xl bg-(--color-dark) text-base font-bold text-white shadow-[0_14px_24px_-16px_rgba(37,52,63,0.9)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-light-blue) active:translate-y-px active:opacity-90">
-            Masuk
+            {isLoading ? "Memproses..." : "Masuk"}
           </button>
+
+          {serverError ? (
+            <p className="text-center text-xs font-semibold text-red-600">
+              {serverError}
+            </p>
+          ) : null}
 
           {submitted && !formIsValid ? (
             <p className="text-center text-xs font-semibold text-red-600">

@@ -1,30 +1,34 @@
 import {
-  ArrowRight,
-  Pin,
-  Flame,
-  Clock3,
-  Video,
-  MessageCircle,
-  Users,
-  Radio,
-  Medal,
-  PenSquare,
-  Search,
-  ThumbsUp,
+    ChevronDown,
+    Clock3,
+    Flame,
+    Medal,
+    MessageCircle,
+    PenSquare,
+    Pin,
+    Radio,
+    Search,
+    ThumbsUp,
+    Users,
+    Video,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SiteHeader } from "../components/SiteHeader.jsx";
-import { FooterSection } from "./thread-detail/components/FooterSection.jsx";
+import { fetchThreads, mapApiThreadListItem } from "../services/saltoApi.js";
+import { getAuthUser } from "../services/authStorage.js";
 import {
-  socialLinks,
-  threadFilters as filters,
-  threadListItems as threadItems,
-  topAlumni,
-  upcomingLives,
+  FooterSection,
+  ThreadCardSkeleton,
+} from "./thread-detail/components";
+import {
+    threadListItems as fallbackThreadItems,
+    socialLinks,
+    topAlumni,
+    upcomingLives,
 } from "./thread-detail/data";
 
-const THREADS_PER_PAGE = 3;
+const THREADS_PER_PAGE = 5;
 
 function parseParticipants(participantsLabel) {
   const match = String(participantsLabel).match(/\d+/);
@@ -39,6 +43,14 @@ function getInitials(name) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+}
+
+function formatTagDisplay(tagLabel) {
+  return String(tagLabel || "")
+    .replace(/-/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function badgeMeta(type) {
@@ -133,9 +145,13 @@ function UpcomingLiveCard({
 export default function ThreadPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState(filters[0]);
+  const [selectedTag, setSelectedTag] = useState(null);
   const [visibleCount, setVisibleCount] = useState(THREADS_PER_PAGE);
+  const [threadItems, setThreadItems] = useState(fallbackThreadItems);
   const [likedByThread, setLikedByThread] = useState({});
+  const [isThreadLoading, setIsThreadLoading] = useState(true);
+  const [threadLoadError, setThreadLoadError] = useState("");
+  const authUser = useMemo(() => getAuthUser(), []);
   const [liveSessions, setLiveSessions] = useState(() =>
     upcomingLives.map((item, index) => ({
       ...item,
@@ -145,35 +161,95 @@ export default function ThreadPage() {
     })),
   );
 
-  const filteredThreads = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+  useEffect(() => {
+    let active = true;
 
-    return threadItems.filter((thread) => {
-      const passFilter =
-        activeFilter === "Semua"
-          ? true
-          : activeFilter === "Mahasiswa"
-            ? thread.roleLabel === "Mahasiswa"
-            : activeFilter === "Alumni"
-              ? thread.roleLabel === "Alumni"
-              : thread.badges.some((badge) => badge.type === "answered");
+    async function loadThreads() {
+      setIsThreadLoading(true);
+      setThreadLoadError("");
 
-      if (!passFilter) return false;
-      if (!normalizedQuery) return true;
+      try {
+        // Fetch threads WITHOUT searchTerm - do filtering client-side instead
+        // This allows searching by author name, title, and content
+        const response = await fetchThreads({
+          page: 1,
+          limit: 100,
+          searchTerm: "",
+          authorType: "",
+        });
+        if (active) {
+          const mappedThreads = Array.isArray(response?.data)
+            ? response.data.map((thread, index) =>
+                mapApiThreadListItem(thread, index),
+              )
+            : [];
 
-      const searchable = [
-        thread.title,
-        thread.excerpt,
-        thread.author,
-        thread.authorMeta,
-        ...thread.tags.map((tag) => tag.label),
-      ]
-        .join(" ")
-        .toLowerCase();
+          setThreadItems(
+            mappedThreads.length > 0 ? mappedThreads : [],
+          );
+        }
+      } catch (error) {
+        if (active) {
+          setThreadItems([]); // Set to empty array on error
+          setThreadLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gagal memuat thread dari API.",
+          );
+        }
+      } finally {
+        if (active) {
+          setIsThreadLoading(false);
+        }
+      }
+    }
 
-      return searchable.includes(normalizedQuery);
+    loadThreads();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const availableTags = useMemo(() => {
+    const tagCount = new Map();
+    threadItems.forEach((thread) => {
+      thread.tags?.forEach((tag) => {
+        if (tag.label) {
+          tagCount.set(tag.label, (tagCount.get(tag.label) || 0) + 1);
+        }
+      });
     });
-  }, [activeFilter, searchQuery]);
+    // Sort by frequency (descending) and take top 6
+    return Array.from(tagCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([label]) => label);
+  }, [threadItems]);
+
+  const filteredThreads = useMemo(() => {
+    let results = threadItems;
+
+    // Filter by search query (API already filtered by searchTerm, but we add client-side author name filtering)
+    if (searchQuery.trim()) {
+      const queryLower = searchQuery.toLowerCase();
+      results = results.filter((thread) => {
+        const authorMatch = thread.author?.toLowerCase().includes(queryLower);
+        const titleMatch = thread.title?.toLowerCase().includes(queryLower);
+        const excerptMatch = thread.excerpt?.toLowerCase().includes(queryLower);
+        return authorMatch || titleMatch || excerptMatch;
+      });
+    }
+
+    // Filter by selected tag
+    if (selectedTag) {
+      results = results.filter((thread) =>
+        thread.tags?.some((tag) => tag.label === selectedTag)
+      );
+    }
+
+    return results;
+  }, [selectedTag, threadItems, searchQuery]);
 
   const visibleThreads = useMemo(
     () => filteredThreads.slice(0, visibleCount),
@@ -187,8 +263,8 @@ export default function ThreadPage() {
     setVisibleCount(THREADS_PER_PAGE);
   };
 
-  const handleFilterClick = (filter) => {
-    setActiveFilter(filter);
+  const handleTagClick = (tag) => {
+    setSelectedTag(selectedTag === tag ? null : tag);
     setVisibleCount(THREADS_PER_PAGE);
   };
 
@@ -231,6 +307,7 @@ export default function ThreadPage() {
     <div className="min-h-screen bg-(--color-gray) text-(--color-dark)">
       <SiteHeader
         activeHref="/thread"
+        user={authUser}
         authActions={[
           { label: "Masuk", to: "/login", variant: "outline" },
           { label: "Daftar", to: "/signup", variant: "solid" },
@@ -239,7 +316,7 @@ export default function ThreadPage() {
 
       <main className="mx-auto w-full max-w-316 px-4 pt-6 lg:px-0">
         <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,916px)_320px]">
-          <section className="h-236.75">
+          <section>
             <header className="h-25">
               <h1 className="text-[38px] leading-[1.15] font-bold text-(--color-dark)">
                 Diskusi Terbaru
@@ -257,24 +334,47 @@ export default function ThreadPage() {
               </label>
             </header>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {filters.map((filter) => (
+            <div className="mt-6 overflow-x-auto pb-2">
+              <div className="flex flex-nowrap gap-2">
                 <button
-                  key={filter}
+                  key="all"
                   type="button"
-                  onClick={() => handleFilterClick(filter)}
-                  className={`inline-flex h-8 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
-                    activeFilter === filter
+                  onClick={() => setSelectedTag(null)}
+                  className={`inline-flex h-8 shrink-0 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
+                    selectedTag === null
                       ? "bg-[#25343f] text-white"
                       : "bg-[#f1f5f9] text-[#25343f] hover:bg-[#e2e8f0]"
                   }`}>
-                  {filter}
+                  Semua
                 </button>
-              ))}
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleTagClick(tag)}
+                    className={`inline-flex h-8 shrink-0 items-center rounded-full px-4 text-[14px] leading-5.25 font-medium transition-colors ${
+                      selectedTag === tag
+                        ? "bg-[#25343f] text-white"
+                        : "bg-[#f1f5f9] text-[#25343f] hover:bg-[#e2e8f0]"
+                    }`}>
+                    {formatTagDisplay(tag)}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="mt-6 flex h-191.75 flex-col gap-4">
-              {visibleThreads.map((thread, index) => {
+            <div className="mt-6 flex flex-col gap-4">
+              {isThreadLoading
+                ? [1, 2, 3].map((key) => <ThreadCardSkeleton key={key} />)
+                : null}
+
+              {!isThreadLoading && threadLoadError ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-[13px] text-amber-700">
+                  {threadLoadError}
+                </div>
+              ) : null}
+
+              {!isThreadLoading && visibleThreads.map((thread) => {
                 const isLiked = Boolean(likedByThread[thread.id]);
                 const likeCount = thread.stats.likes + (isLiked ? 1 : 0);
 
@@ -287,9 +387,7 @@ export default function ThreadPage() {
                     onKeyDown={(event) =>
                       handleThreadCardKeyDown(event, thread.id)
                     }
-                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue) ${
-                      index === 1 ? "h-57" : "h-56.25"
-                    }`}>
+                    className={`group cursor-pointer overflow-hidden rounded-2xl border border-(--color-light-blue) bg-white px-6 py-5 shadow-[0_18px_30px_-28px_rgba(37,52,63,0.5)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-28px_rgba(37,52,63,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-like-blue)`}>
                     <div className="flex items-center gap-2.5">
                       {thread.badges.map((badge) => {
                         const meta = threadBadgeMeta(badge.type);
@@ -345,7 +443,7 @@ export default function ThreadPage() {
                               <span
                                 key={tag.label}
                                 className={`rounded-full px-2.5 py-1 text-[12px] leading-4 font-medium ${tag.tone}`}>
-                                {tag.label}
+                                {formatTagDisplay(tag.label)}
                               </span>
                             ))}
                           </div>
@@ -383,36 +481,38 @@ export default function ThreadPage() {
                 );
               })}
 
-              {visibleThreads.length === 0 ? (
+              {!isThreadLoading && visibleThreads.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-(--color-light-blue) bg-white px-6 py-8 text-center text-[14px] text-(--color-secondary)">
                   Tidak ada thread yang cocok dengan filter atau pencarian ini.
                 </div>
               ) : null}
 
-              <button
-                type="button"
-                disabled={!canLoadMore}
-                onClick={() =>
-                  setVisibleCount((previous) =>
-                    Math.min(
-                      previous + THREADS_PER_PAGE,
-                      filteredThreads.length,
-                    ),
-                  )
-                }
-                className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
-                Muat Lebih Banyak <ArrowRight className="h-3 w-3" />
-              </button>
+              {!isThreadLoading ? (
+                <button
+                  type="button"
+                  disabled={!canLoadMore}
+                  onClick={() =>
+                    setVisibleCount((previous) =>
+                      Math.min(
+                        previous + THREADS_PER_PAGE,
+                        filteredThreads.length,
+                      ),
+                    )
+                  }
+                  className="mt-4 inline-flex h-10.25 w-auto items-center justify-center gap-2.5 self-center rounded-full border border-[#25343f] px-6.25 text-[14px] leading-5 font-semibold text-[#25343f] transition hover:bg-[#f8fafc]">
+                  Muat Lebih Banyak <ChevronDown className="h-3 w-3" />
+                </button>
+              ) : null}
             </div>
           </section>
 
-          <aside className="h-190 space-y-6">
-            <button
-              type="button"
+          <aside className="space-y-6">
+            <Link
+              to="/thread/create"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25343f] px-4 text-[16px] leading-6 font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition hover:bg-[#1f2c35]">
               <PenSquare className="h-5 w-5" />
               Buat Thread Baru
-            </button>
+            </Link>
 
             <section className="h-70.5 rounded-2xl border border-(--color-light-blue) bg-white p-5 shadow-[0_16px_30px_-26px_rgba(37,52,63,0.5)]">
               <header className="flex items-center gap-2">

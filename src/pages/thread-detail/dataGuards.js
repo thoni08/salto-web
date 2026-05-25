@@ -1,6 +1,8 @@
 /** @typedef {import("./types").Answer} Answer */
 /** @typedef {import("./types").Contributor} Contributor */
 
+import { stripInlineMarkdown } from "../../utils/formatText";
+
 const ALLOWED_BADGES = new Set(["top", "mentor", "expert", "phd"]);
 
 function ensureString(value, fallback = "") {
@@ -20,7 +22,7 @@ function ensureParagraphs(value) {
   if (!Array.isArray(value)) return ["Konten jawaban belum tersedia."];
   const paragraphs = value
     .filter((item) => typeof item === "string" && item.trim())
-    .map((item) => item.trim());
+    .map((item) => stripInlineMarkdown(item));
   return paragraphs.length > 0
     ? paragraphs
     : ["Konten jawaban belum tersedia."];
@@ -32,7 +34,9 @@ function sanitizeReply(reply, answerId, index) {
     id: ensureString(safeReply.id, `${answerId}-reply-${index + 1}`),
     author: ensureString(safeReply.author, "Pengguna"),
     role: ensureString(safeReply.role, "Member"),
-    text: ensureString(safeReply.text, "Balasan belum tersedia."),
+    text: stripInlineMarkdown(
+      ensureString(safeReply.text, "Balasan belum tersedia."),
+    ),
     createdAt: ensureString(safeReply.createdAt, "-"),
     likes: ensureNumber(safeReply.likes, 0),
   };
@@ -56,6 +60,10 @@ export function sanitizeAnswer(answer, index = 0) {
   return {
     id,
     author: ensureString(safeAnswer.author, "Anonim"),
+    authorRole: ensureString(safeAnswer.authorRole, ""),
+    authorId: ensureString(safeAnswer.authorId, ""),
+    currentUserLiked: Boolean(safeAnswer.currentUserLiked),
+    isBestAnswer: Boolean(safeAnswer.isBestAnswer),
     accent: Boolean(safeAnswer.accent),
     subtitle: ensureString(safeAnswer.subtitle, "Informasi belum tersedia"),
     createdAt: ensureString(safeAnswer.createdAt, "-"),
@@ -85,6 +93,7 @@ export function sanitizeContributor(contributor, index = 0) {
     name: ensureString(safeContributor.name, "Kontributor"),
     role: ensureString(safeContributor.role, "Role belum tersedia"),
     org: ensureString(safeContributor.org, "Organisasi belum tersedia"),
+    userNameRaw: ensureString(safeContributor.userNameRaw, ""),
     badges: ensureBadges(safeContributor.badges),
     stats: {
       answer: ensureString(stats.answer, "0"),
