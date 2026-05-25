@@ -111,6 +111,13 @@ export function SiteHeader({
 
   const avatarSrc = getAvatarUrl(sessionUser);
   const hasSession = Boolean(getAuthToken());
+  const resolvedAuthActions =
+    !hasSession && authActions.length === 0
+      ? [
+          { label: "Masuk", to: "/login", variant: "outline" },
+          { label: "Daftar", to: "/signup", variant: "solid" },
+        ]
+      : authActions;
 
   useEffect(() => {
     setAvatarLoaded(false);
@@ -206,7 +213,7 @@ export function SiteHeader({
             </div>
           ) : (
             <>
-              {authActions.map((action) => {
+              {resolvedAuthActions.map((action) => {
                 const sharedClass =
                   "rounded-full px-5 py-2 text-[14px] leading-4.5 transition";
 
