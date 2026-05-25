@@ -547,6 +547,10 @@ export async function fetchRelatedThreads(threadId) {
   return apiClient.get(`/api/threads/${threadId}/related`);
 }
 
+export async function deleteThread(threadId) {
+  return apiClient.delete(`/api/threads/${threadId}`);
+}
+
 export async function fetchCurrentUser() {
   return apiClient.get("/api/user");
 }
