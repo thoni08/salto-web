@@ -11,6 +11,7 @@ export function ContributorCard({
   isFollowing = false,
   isFollowLoading = false,
   onToggleFollow,
+  onOpenProfile,
 }) {
   const safeContributor = sanitizeContributor(contributor);
   const profileHref = safeContributor.userNameRaw
@@ -23,6 +24,19 @@ export function ContributorCard({
   return (
     <Wrapper
       {...wrapperProps}
+      onClick={(event) => {
+        if (!profileHref) return;
+
+        const shouldContinue = onOpenProfile?.({
+          event,
+          contributor: safeContributor,
+          profileHref,
+        });
+
+        if (shouldContinue === false) {
+          event.preventDefault();
+        }
+      }}
       className={`block rounded-[12px] ${profileHref ? "cursor-pointer hover:bg-[#f9fafb]/80" : ""}`}>
       <article className="space-y-3 p-1">
       <div className="flex items-start gap-3">

@@ -507,6 +507,18 @@ export default function ThreadDetailPage() {
     }
   };
 
+  const handleOpenContributorProfile = () => {
+    if (isAuthenticated) {
+      return true;
+    }
+
+    showToast("Masuk dulu untuk melihat profil alumni ini, ya.", {
+      type: "warning",
+    });
+    navigate("/login");
+    return false;
+  };
+
   const currentThreadId = threadHeader.id;
   const sortMode = sortModeByThread[currentThreadId] || "popular";
   const submittedAnswers = useMemo(
@@ -1071,6 +1083,7 @@ export default function ThreadDetailPage() {
                             ?.loading,
                         )}
                         onToggleFollow={handleToggleFollow}
+                        onOpenProfile={handleOpenContributorProfile}
                       />
                       {idx < contributors.length - 1 ? (
                         <div className="mt-3 border-t border-[#e5e7eb]" />
