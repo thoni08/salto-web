@@ -13,8 +13,8 @@ export function FooterSection({ socialLinks }) {
   return (
     <footer className="mt-10">
       <section className="bg-(--color-like-blue)">
-        <div className="mx-auto flex w-full max-w-316 flex-wrap items-center justify-between gap-6 px-4 py-10 lg:px-0">
-          <div>
+        <div className="mx-auto flex w-full max-w-316 flex-col gap-5 px-4 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-0">
+          <div className="max-w-140">
             <h3 className="text-[20px] leading-7.5 font-bold text-white">
               Newsletter Segera Hadir
             </h3>
@@ -24,20 +24,20 @@ export function FooterSection({ socialLinks }) {
             </p>
           </div>
 
-          <form className="flex w-full max-w-md items-center gap-2">
+          <form className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="email"
               placeholder="Masukkan email kamu..."
               disabled
               aria-disabled="true"
-              className="h-11 min-w-60 flex-1 cursor-not-allowed rounded-full border border-white/25 bg-white/10 px-4.25 text-[14px] leading-5 text-white placeholder:text-white/75 opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="h-11 w-full min-w-0 flex-1 cursor-not-allowed rounded-full border border-white/25 bg-white/10 px-4.25 text-[14px] leading-5 text-white placeholder:text-white/75 opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             />
 
             <button
               type="submit"
               disabled
               aria-disabled="true"
-              className={`${buttonFx} inline-flex h-11 cursor-not-allowed items-center gap-2 rounded-full bg-(--color-light-blue)/70 px-5 text-[14px] leading-5 font-semibold text-white opacity-70 focus-visible:ring-white/85`}
+              className={`${buttonFx} inline-flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-(--color-light-blue)/70 px-5 text-[14px] leading-5 font-semibold text-white opacity-70 focus-visible:ring-white/85 sm:w-auto`}
               title="Fitur newsletter belum tersedia">
               Subscribe
               <Icon icon={Send} className="h-4 w-4" strokeWidth={2} />
@@ -47,8 +47,8 @@ export function FooterSection({ socialLinks }) {
       </section>
 
       <section className="bg-[#29326c] text-white">
-        <div className="mx-auto grid w-full max-w-316 gap-8 px-4 py-9 lg:grid-cols-[467px_218px_218px_218px] lg:px-0">
-          <article>
+        <div className="mx-auto grid w-full max-w-316 gap-8 px-4 py-9 md:grid-cols-2 lg:grid-cols-[467px_218px_218px_218px] lg:px-0">
+          <article className="min-w-0">
             <p className="text-[20px] tracking-[2px] font-black">
               <span className="text-(--color-primary)">S</span>
               ALTO
@@ -103,7 +103,7 @@ export function FooterSection({ socialLinks }) {
             </div>
           </article>
 
-          <article>
+          <article className="min-w-0">
             <h4 className="text-[13px] leading-[19.5px] font-semibold">
               Platform
             </h4>
@@ -154,7 +154,7 @@ export function FooterSection({ socialLinks }) {
             </ul>
           </article>
 
-          <article>
+          <article className="min-w-0">
             <h4 className="text-[13px] leading-[19.5px] font-semibold">
               Komunitas
             </h4>
@@ -181,7 +181,7 @@ export function FooterSection({ socialLinks }) {
             </ul>
           </article>
 
-          <article>
+          <article className="min-w-0">
             <h4 className="text-[13px] leading-[19.5px] font-semibold">
               Dukungan
             </h4>
@@ -224,12 +224,12 @@ export function FooterSection({ socialLinks }) {
         </div>
 
         <div className="border-t border-white/20">
-          <div className="mx-auto flex w-full max-w-316 flex-wrap items-center justify-between gap-3 px-4 py-4 text-[12px] leading-4.5 text-white/80 lg:px-0">
+          <div className="mx-auto flex w-full max-w-316 flex-col gap-3 px-4 py-4 text-[12px] leading-4.5 text-white/80 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between lg:px-0">
             <p>
               © 2026 SALTO - Student Alumni Link & Talk Online. Made with love
               in Indonesia.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Link to="/privacy" className={`${linkFx} hover:text-white`}>
                 Privasi
               </Link>
