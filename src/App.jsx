@@ -15,6 +15,10 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SiteHeader } from "./components/SiteHeader.jsx";
+import {
+  LIVE_COMING_SOON_LABEL,
+  LIVE_FEATURE_ENABLED,
+} from "./config/features.js";
 import { getAuthUser } from "./services/authStorage.js";
 import { fetchThreads, mapApiThreadListItem } from "./services/saltoApi.js";
 import { FooterSection } from "./pages/thread-detail/components/FooterSection.jsx";
@@ -359,10 +363,12 @@ function App() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[14px] text-(--color-like-blue)">
-                  Diskusi terkini
+                  {LIVE_FEATURE_ENABLED ? "Diskusi terkini" : "Segera hadir"}
                 </p>
                 <h2 className="mt-1 text-[38px] leading-[1.15] font-bold text-(--color-dark)">
-                  Sesi Live Thread Mendatang
+                  {LIVE_FEATURE_ENABLED
+                    ? "Sesi Live Thread Mendatang"
+                    : "Live Diskusi Alumni"}
                 </h2>
               </div>
               <div className="flex items-center gap-2 text-(--color-secondary)">
@@ -389,7 +395,10 @@ function App() {
                     style={{ backgroundImage: card.tone }}>
                     <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                       <span className="inline-flex items-center gap-1 rounded-full bg-white/25 px-2 py-0.5">
-                        <Clock3 className="h-3 w-3" /> {card.status}
+                        <Clock3 className="h-3 w-3" />{" "}
+                        {LIVE_FEATURE_ENABLED
+                          ? card.status
+                          : LIVE_COMING_SOON_LABEL}
                       </span>
                       <span className="rounded-full bg-white/20 px-2 py-0.5">
                         {card.chip}
@@ -405,8 +414,13 @@ function App() {
                       </div>
                       <button
                         type="button"
-                        aria-label="Play preview"
-                        className="grid h-8 w-8 place-items-center rounded-full bg-white/20">
+                        aria-label={
+                          LIVE_FEATURE_ENABLED
+                            ? "Play preview"
+                            : "Live coming soon"
+                        }
+                        disabled={!LIVE_FEATURE_ENABLED}
+                        className="grid h-8 w-8 place-items-center rounded-full bg-white/20 disabled:cursor-not-allowed disabled:opacity-55">
                         <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
                       </button>
                     </div>
@@ -424,9 +438,9 @@ function App() {
                         {card.participants}
                       </p>
                       <Link
-                        to="/signup"
-                        className={`rounded-full px-3 py-1 text-[11px] font-semibold text-white ${card.cta === "Bergabung" ? "bg-[#ef4444]" : "bg-(--color-dark)"} hover:opacity-90`}>
-                        {card.cta}
+                        to="/live"
+                        className="rounded-full bg-[#25343f] px-3 py-1 text-[11px] font-semibold text-white hover:opacity-90">
+                        {LIVE_FEATURE_ENABLED ? card.cta : "Coming Soon"}
                       </Link>
                     </div>
                   </div>

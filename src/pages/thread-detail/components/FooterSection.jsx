@@ -1,5 +1,6 @@
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import { Link } from "react-router-dom";
+import { LIVE_FEATURE_ENABLED } from "../../../config/features";
 import { buttonFx, darkButtonFx, linkFx } from "../constants";
 import { Icon } from "./Icon";
 
@@ -137,11 +138,18 @@ export function FooterSection({ socialLinks }) {
                 </span>
               </li>
               <li>
-                <Link
-                  to="/live-diskusi"
-                  className={availableLinkClassName}>
-                  Live Session
-                </Link>
+                {LIVE_FEATURE_ENABLED ? (
+                  <Link to="/live-diskusi" className={availableLinkClassName}>
+                    Live Session
+                  </Link>
+                ) : (
+                  <span
+                    className={comingSoonClassName}
+                    title={comingSoonLabel}
+                    aria-label={comingSoonLabel}>
+                    Live Session
+                  </span>
+                )}
               </li>
             </ul>
           </article>
